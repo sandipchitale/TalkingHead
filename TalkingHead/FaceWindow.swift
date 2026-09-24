@@ -30,6 +30,7 @@ struct FaceWindow: View {
         .frame(minWidth: 220, maxWidth: .infinity, minHeight: 330, maxHeight: .infinity)
         .navigationTitle(speech.portrait.voiceName)
         .background(WindowAccessor { window in
+            bringToFront(window)
             bubble.attach(to: window, content: SpeechBubbleView(bubble: bubble).environment(speech))
         })
         .task {
@@ -96,6 +97,17 @@ struct FaceWindow: View {
         } catch {
             NSAlert(error: error).runModal()
         }
+    }
+}
+
+/// Activates the app and makes `window` key once it is on screen. A menu bar applet isn't
+/// active when it opens a window from its menu, and clicks on an inactive app's window only
+/// activate it, so without this the first clicks on the head or buttons would be lost.
+@MainActor
+func bringToFront(_ window: NSWindow) {
+    DispatchQueue.main.async {
+        NSApp.activate()
+        window.makeKeyAndOrderFront(nil)
     }
 }
 

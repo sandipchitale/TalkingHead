@@ -34,5 +34,6 @@ struct InputWindow: View {
         }
         .padding(16)
         .frame(minWidth: 420, minHeight: 220)
+        .background(WindowAccessor(onWindow: bringToFront))
     }
 }

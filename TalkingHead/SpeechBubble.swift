@@ -37,8 +37,12 @@ final class SpeechBubble {
             center.addObserver(forName: NSWindow.didResizeNotification, object: window, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated { self?.reposition() }
             },
+            // SwiftUI reuses the window when it is reopened, so stay attached and just hide.
             center.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.detach() }
+                MainActor.assumeIsolated {
+                    self?.isShown = false
+                    self?.hide()
+                }
             },
         ]
         if isShown { show() }

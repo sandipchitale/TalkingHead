@@ -100,10 +100,14 @@ struct MenuBarMenu: View {
         launchesAtLogin = SMAppService.mainApp.status == .enabled
     }
 
-    /// Opens a window and brings it to the front (an applet isn't active by default).
+    /// Opens a window and brings it to the front: an applet isn't active by default, and
+    /// clicks on an inactive app's window would only activate it.
     private func show(_ id: String) {
         openWindow(id: id)
-        NSApp.activate()
+        DispatchQueue.main.async {
+            NSApp.activate()
+            NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(id) == true }?.makeKeyAndOrderFront(nil)
+        }
     }
 }
 
