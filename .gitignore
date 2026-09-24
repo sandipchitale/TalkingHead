@@ -1,0 +1,16 @@
+# Build output (xcodebuild -derivedDataPath build)
+build/
+DerivedData/
+
+# macOS
+.DS_Store
+
+# Xcode per-user state
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+TalkingHead.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+
+# Swift Package Manager / misc tooling
+.swiftpm/
+.build/

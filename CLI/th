@@ -1,0 +1,11 @@
+#!/bin/sh
+# th: speak text with the Talking Head. Run `th --help` for usage.
+#
+# Resolves symlinks (e.g. /usr/local/bin/th -> .../TalkingHead.app/Contents/MacOS/th) to find
+# the app executable next to this script, then runs it with the arguments packed into a
+# single -THArguments value (NUL-separated, base64, starting with "th" so it is never
+# empty). AppKit would otherwise treat bare arguments such as file names (or an empty
+# value) as documents to open, and SwiftUI then opens no windows.
+here=$(dirname "$(readlink -f "$0")")
+packed=$({ printf 'th\0'; for argument in "$@"; do printf '%s\0' "$argument"; done; } | base64)
+exec "$here/TalkingHead" -THArguments "$packed"
