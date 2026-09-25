@@ -23,6 +23,9 @@ https://github.com/user-attachments/assets/fa5e0d48-b055-455c-b689-b5dfc53b3d40
 
 https://github.com/user-attachments/assets/e3388cf4-3ee7-45cc-b270-c060d18efc0e
 
+**Feature tour:** [`docs/index.html`](docs/index.html) is a page where every feature has a 🔊 **Explain**
+link that makes Talking Head explain it out loud. It also shows how to add such links to your own pages.
+
 ## Requirements
 
 - macOS 26 (Tahoe) or later
