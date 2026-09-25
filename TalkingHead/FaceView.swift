@@ -11,39 +11,45 @@ struct FaceView: View {
     /// Fixes the eyelids at a given openness (0 closed ... 1 open), e.g. for previews.
     var eyeOpenness: Double?
 
-    var body: some View {
-        TimelineView(.animation(paused: !isAnimated)) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            let eyeOpen = eyeOpenness ?? (isAnimated ? Self.blink(at: t) : 1)
-            let mouth = mouth
-            let portrait = portrait
+    /// Driven by `blink()`; the face is only redrawn while a blink is under way or the
+    /// mouth changes, not every display frame.
+    @State private var blinkOpenness = 1.0
 
-            Canvas { context, size in
-                let scale = min(size.width / portrait.size.width, size.height / portrait.size.height)
-                context.translateBy(x: (size.width - portrait.size.width * scale) / 2,
-                                    y: (size.height - portrait.size.height * scale) / 2)
-                context.scaleBy(x: scale, y: scale)
-                let bounds = CGRect(origin: .zero, size: portrait.size)
-                context.clip(to: Path(roundedRect: bounds, cornerRadius: 28 / scale))
-                context.draw(portrait.image, in: bounds)
-                portrait.drawMouth(in: &context, shape: mouth)
-                portrait.drawEyelids(in: &context, openness: eyeOpen)
-            }
+    var body: some View {
+        let eyeOpen = eyeOpenness ?? blinkOpenness
+        let mouth = mouth
+        let portrait = portrait
+
+        Canvas { context, size in
+            let scale = min(size.width / portrait.size.width, size.height / portrait.size.height)
+            context.translateBy(x: (size.width - portrait.size.width * scale) / 2,
+                                y: (size.height - portrait.size.height * scale) / 2)
+            context.scaleBy(x: scale, y: scale)
+            let bounds = CGRect(origin: .zero, size: portrait.size)
+            context.clip(to: Path(roundedRect: bounds, cornerRadius: 28 / scale))
+            context.draw(portrait.image, in: bounds)
+            portrait.drawMouth(in: &context, shape: mouth)
+            portrait.drawEyelids(in: &context, openness: eyeOpen)
         }
         .aspectRatio(portrait.size, contentMode: .fit)
         .accessibilityLabel("Animated talking face")
+        .task(id: isAnimated) {
+            if isAnimated { await blink() }
+        }
     }
 
-    /// Eye openness (0 closed ... 1 open) at time `t`: one quick blink per ~3.7 s cycle,
-    /// at a pseudo-random point in each cycle so it doesn't look mechanical.
-    private static func blink(at t: TimeInterval) -> Double {
-        let period = 3.7
-        let blinkDuration = 0.18
-        let cycle = (t / period).rounded(.down)
-        let jitter = (sin(cycle * 12.9898) * 43758.5453).truncatingRemainder(dividingBy: 1).magnitude * 2.5
-        let local = t - cycle * period - jitter
-        guard local >= 0, local < blinkDuration else { return 1 }
-        return abs(local - blinkDuration / 2) / (blinkDuration / 2)
+    /// Blinks every 2.5–5.5 s (randomised so it doesn't look mechanical): the lids close and
+    /// open over about 180 ms, in 18 ms steps.
+    private func blink() async {
+        let steps = 10
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(Double.random(in: 2.5...5.5)))
+            for step in 1...steps {
+                guard !Task.isCancelled else { return }
+                blinkOpenness = abs(Double(step) - Double(steps) / 2) / (Double(steps) / 2)
+                try? await Task.sleep(for: .milliseconds(18))
+            }
+        }
     }
 }
 

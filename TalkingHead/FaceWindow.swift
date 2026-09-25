@@ -21,9 +21,9 @@ struct FaceWindow: View {
         VStack(spacing: 0) {
             FaceView(mouth: speech.mouth, portrait: speech.portrait)
                 .padding([.horizontal, .top], 12)
-                .contentShape(.rect)
-                .onTapGesture { bubble.toggle() }
-                .help("Click to show or hide the speech bubble")
+                .overlay {
+                    ClickCatcher(toolTip: "Click to show or hide the speech bubble") { bubble.toggle() }
+                }
 
             toolbar
         }
@@ -85,15 +85,14 @@ struct FaceWindow: View {
         }
     }
 
-    /// Speaks a text file: plain text, or the text of RTF, HTML and other formats AppKit reads.
+    /// Speaks a text file (see `TextFile`).
     private func speak(fileAt url: URL) {
         let isAccessing = url.startAccessingSecurityScopedResource()
         defer {
             if isAccessing { url.stopAccessingSecurityScopedResource() }
         }
         do {
-            let text = try NSAttributedString(url: url, options: [:], documentAttributes: nil).string
-            speech.speak(text)
+            speech.speak(try TextFile.read(url))
         } catch {
             NSAlert(error: error).runModal()
         }
@@ -108,6 +107,36 @@ func bringToFront(_ window: NSWindow) {
     DispatchQueue.main.async {
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
+    }
+}
+
+/// A transparent view that reports clicks, including the first click on a window of an
+/// inactive app (which SwiftUI's tap gesture would only use to activate the app).
+struct ClickCatcher: NSViewRepresentable {
+    var toolTip: String
+    var onClick: () -> Void
+
+    func makeNSView(context: Context) -> ClickView {
+        let view = ClickView()
+        view.toolTip = toolTip
+        view.onClick = onClick
+        return view
+    }
+
+    func updateNSView(_ view: ClickView, context: Context) {
+        view.onClick = onClick
+    }
+
+    final class ClickView: NSView {
+        var onClick: (() -> Void)?
+
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        override func mouseUp(with event: NSEvent) {
+            if bounds.contains(convert(event.locationInWindow, from: nil)) {
+                onClick?()
+            }
+        }
     }
 }
 

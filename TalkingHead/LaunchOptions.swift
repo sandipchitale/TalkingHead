@@ -114,7 +114,7 @@ struct LaunchOptions {
     private static func readText(from path: String) -> String {
         if path == "-" { return readStandardInput() }
         do {
-            return try String(contentsOfFile: (path as NSString).expandingTildeInPath, encoding: .utf8)
+            return try TextFile.read(URL(fileURLWithPath: (path as NSString).expandingTildeInPath))
         } catch {
             fail("can't read \(path): \(error.localizedDescription)")
         }

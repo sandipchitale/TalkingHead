@@ -20,9 +20,6 @@ https://github.com/user-attachments/assets/fa5e0d48-b055-455c-b689-b5dfc53b3d40
 
 https://github.com/user-attachments/assets/e3388cf4-3ee7-45cc-b270-c060d18efc0e
 
-*The screenshots show an earlier single-window layout. The face now has its own window, and the text
-appears in the speech bubble.*
-
 ## Requirements
 
 - macOS 26 (Tahoe) or later
@@ -39,6 +36,12 @@ xcodebuild -project TalkingHead.xcodeproj -scheme TalkingHead -configuration Deb
 
 The app is built to `build/Build/Products/Debug/TalkingHead.app`. You can also open
 `TalkingHead.xcodeproj` in Xcode and run it.
+
+Run the unit tests (mouth-shape rules and `th` argument parsing):
+
+```sh
+xcodebuild -project TalkingHead.xcodeproj -scheme TalkingHead -derivedDataPath build test
+```
 
 `project.yml` is the source of truth for the Xcode project. After changing it, run
 `xcodegen generate` and commit both files.
@@ -63,6 +66,7 @@ Its menu offers:
 - **Type Text to Speak…** opens a window with a text box and a Speak button (⌘⏎).
 - **Play/Pause** and **Stop**.
 - **Voice:** Male (Daniel) or Female (Samantha).
+- **Speed:** Slower, Normal or Faster (applies from the next text spoken).
 - **Launch at Login.**
 - **Quit.**
 
@@ -84,7 +88,7 @@ th [-v|--voice male|female] [-t|--tty] [file]
 
 | Invocation | Result |
 |---|---|
-| `th notes.txt` | Speaks the file, then quits |
+| `th notes.txt` | Speaks the file (plain text, RTF, HTML, Word…), then quits |
 | `echo "Hello" \| th`, `th < notes.txt` | Speaks piped standard input, then quits |
 | `th -t` | Reads text typed at the terminal (end with Control-D), speaks it, then quits |
 | `th` at a terminal | Shows the talking head only; use its toolbar to type text or pick a file |
@@ -126,6 +130,8 @@ and exit with status 2.
 | `TalkingHead/SpeechBubble.swift` | Speech bubble child window and shape |
 | `TalkingHead/SpokenTextView.swift` | Word-wrapped text with the moving highlight |
 | `TalkingHead/InputWindow.swift` | Typing window |
+| `TalkingHead/TextFile.swift` | Reads the text of a file (used by `th` and the file button) |
+| `TalkingHeadTests/` | Unit tests (Swift Testing) |
 | `TalkingHead/Assets.xcassets` | Portraits and their generated mouth and eyelid textures |
 | `CLI/th` | The `th` script, copied into the app bundle and signed at build time |
 | `project.yml` | XcodeGen project definition |

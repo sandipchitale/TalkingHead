@@ -41,7 +41,7 @@ animated face which will sync with the speech. This should run on MacOS.
 ### Menu bar applet
 - Runs as a menu bar applet: no Dock icon and no app menu.
 - The menu has: Show Talking Head, Type Text to Speak…, Play/Pause, Stop, Voice (Male/Female),
-  Launch at Login, and Quit.
+  Speed (Slower/Normal/Faster), Launch at Login, and Quit.
 - Launched from Finder or at login, it starts with only the menu bar item and keeps running when its
   windows are closed.
 

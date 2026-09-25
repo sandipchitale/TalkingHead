@@ -6,7 +6,8 @@ import Synchronization
 /// frame, so the UI can ask "what is being heard right now?" at any moment.
 ///
 /// Synthesizer and audio callbacks arrive on arbitrary threads, so this type is
-/// nonisolated and guards its mutable state with a `Mutex`.
+/// nonisolated and guards its mutable state with a `Mutex`. Buffers are scheduled while
+/// holding the lock, so `stop()` (which takes the lock first) can't interleave with them.
 nonisolated final class AudioPipeline: NSObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
     /// Number of audio frames summarised by each envelope entry.
     static let windowFrames: Int64 = 256
@@ -100,12 +101,6 @@ nonisolated final class AudioPipeline: NSObject, AVSpeechSynthesizerDelegate, @u
         }
     }
 
-    private enum RenderAction {
-        case ignore
-        case schedule(startEngine: Bool)
-        case finish(engineStarted: Bool)
-    }
-
     private let synthesizer = AVSpeechSynthesizer()
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
@@ -176,48 +171,43 @@ nonisolated final class AudioPipeline: NSObject, AVSpeechSynthesizerDelegate, @u
     private func receive(_ buffer: AVAudioBuffer, generation: UInt64) {
         guard let pcm = buffer as? AVAudioPCMBuffer else { return }
 
-        let action: RenderAction = timeline.withLock { t in
-            guard t.generation == generation, !t.renderingFinished else { return .ignore }
+        timeline.withLock { t in
+            guard t.generation == generation, !t.renderingFinished else { return }
+
             // A zero-length buffer marks the end of the utterance (it may arrive more than once).
             if pcm.frameLength == 0 {
                 t.renderingFinished = true
-                return .finish(engineStarted: t.engineStarted)
+                // Schedule a 1-frame marker buffer whose playback completion signals the end of speech.
+                guard t.engineStarted,
+                      let marker = AVAudioPCMBuffer(pcmFormat: player.outputFormat(forBus: 0), frameCapacity: 1)
+                else {
+                    onFinished(generation)
+                    return
+                }
+                marker.frameLength = 1
+                player.scheduleBuffer(marker, completionCallbackType: .dataPlayedBack) { [onFinished] _ in
+                    onFinished(generation)
+                }
+                return
             }
+
             t.appendEnvelope(of: pcm)
             t.framesRendered += Int64(pcm.frameLength)
-            defer { t.engineStarted = true }
-            return .schedule(startEngine: !t.engineStarted)
-        }
-
-        switch action {
-        case .ignore:
-            return
-        case .schedule(let startEngine):
-            if startEngine {
+            if !t.engineStarted {
                 // Voices differ in sample rate, so connect using the format of the first buffer.
                 engine.disconnectNodeOutput(player)
                 engine.connect(player, to: engine.mainMixerNode, format: pcm.format)
                 do {
                     try engine.start()
                 } catch {
+                    t.renderingFinished = true
                     onFinished(generation)
                     return
                 }
                 player.play()
+                t.engineStarted = true
             }
             player.scheduleBuffer(pcm)
-        case .finish(let engineStarted):
-            // Schedule a 1-frame marker buffer whose playback completion signals the end of speech.
-            guard engineStarted,
-                  let marker = AVAudioPCMBuffer(pcmFormat: player.outputFormat(forBus: 0), frameCapacity: 1)
-            else {
-                onFinished(generation)
-                return
-            }
-            marker.frameLength = 1
-            player.scheduleBuffer(marker, completionCallbackType: .dataPlayedBack) { [onFinished] _ in
-                onFinished(generation)
-            }
         }
     }
 

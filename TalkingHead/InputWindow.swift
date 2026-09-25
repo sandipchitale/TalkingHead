@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// A window to type text into; Speak sends it to the talking head.
@@ -7,6 +8,7 @@ struct InputWindow: View {
     @Environment(SpeechEngine.self) private var speech
     @Environment(\.openWindow) private var openWindow
     @State private var text: String
+    @State private var window: NSWindow?
 
     init(initialText: String) {
         _text = State(initialValue: initialText)
@@ -23,8 +25,7 @@ struct InputWindow: View {
             HStack {
                 Spacer()
                 Button("Speak", systemImage: "play.fill") {
-                    openWindow(id: FaceWindow.id)
-                    speech.speak(text)
+                    speak()
                 }
                 .buttonStyle(.glassProminent)
                 .controlSize(.large)
@@ -34,6 +35,23 @@ struct InputWindow: View {
         }
         .padding(16)
         .frame(minWidth: 420, minHeight: 220)
-        .background(WindowAccessor(onWindow: bringToFront))
+        .background(WindowAccessor { window in
+            self.window = window
+            bringToFront(window)
+        })
+    }
+
+    /// Speaks the text, opening the talking head if it isn't showing, and keeps the keyboard
+    /// focus here so you can keep typing.
+    private func speak() {
+        let face = NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(FaceWindow.id) == true }
+        if face?.isVisible != true {
+            openWindow(id: FaceWindow.id)
+            // The face window makes itself key when it appears; take the focus back.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [window] in
+                window?.makeKeyAndOrderFront(nil)
+            }
+        }
+        speech.speak(text)
     }
 }

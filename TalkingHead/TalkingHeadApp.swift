@@ -53,7 +53,7 @@ struct TalkingHeadApp: App {
 struct MenuBarMenu: View {
     @Environment(SpeechEngine.self) private var speech
     @Environment(\.openWindow) private var openWindow
-    @State private var launchesAtLogin = SMAppService.mainApp.status == .enabled
+    @State private var launchesAtLogin = MenuBarMenu.isLoginItem
 
     var body: some View {
         @Bindable var speech = speech
@@ -77,16 +77,29 @@ struct MenuBarMenu: View {
         .pickerStyle(.inline)
         .disabled(speech.state != .idle)
 
+        Picker("Speed", selection: $speech.rate) {
+            ForEach(SpeechEngine.rates, id: \.rate) { option in
+                Text(option.name).tag(option.rate)
+            }
+        }
+        .pickerStyle(.inline)
+
         Divider()
 
-        Toggle("Launch at Login", isOn: $launchesAtLogin)
-            .onChange(of: launchesAtLogin) { _, enabled in setLaunchAtLogin(enabled) }
+        Toggle("Launch at Login", isOn: Binding(get: { launchesAtLogin }, set: setLaunchAtLogin))
 
         Button("Quit Talking Head") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
     }
 
-    /// Registers or unregisters the app as a login item, so it is in the menu bar after every login.
+    /// Registered as a login item, including when macOS is still waiting for the user to
+    /// approve it in System Settings.
+    private static var isLoginItem: Bool {
+        [.enabled, .requiresApproval].contains(SMAppService.mainApp.status)
+    }
+
+    /// Registers or unregisters the app as a login item, so it is in the menu bar after every
+    /// login. If macOS needs the user's approval, it opens the Login Items settings.
     private func setLaunchAtLogin(_ enabled: Bool) {
         do {
             if enabled {
@@ -97,7 +110,10 @@ struct MenuBarMenu: View {
         } catch {
             NSLog("Launch at Login: \(error.localizedDescription)")
         }
-        launchesAtLogin = SMAppService.mainApp.status == .enabled
+        if SMAppService.mainApp.status == .requiresApproval {
+            SMAppService.openSystemSettingsLoginItems()
+        }
+        launchesAtLogin = Self.isLoginItem
     }
 
     /// Opens a window and brings it to the front: an applet isn't active by default, and

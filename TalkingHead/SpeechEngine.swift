@@ -21,8 +21,11 @@ final class SpeechEngine {
     var portraitID = Portrait.man.id
     var portrait: Portrait { portraits.first { $0.id == portraitID } ?? .man }
     /// Speech rate, from `AVSpeechUtteranceMinimumSpeechRate` to `AVSpeechUtteranceMaximumSpeechRate`;
-    /// the default is a little slower than the system's.
-    var rate: Float = 0.42
+    /// the default is a little slower than the system's. Applies from the next utterance.
+    var rate: Float = SpeechEngine.rates[1].rate
+
+    /// Speeds offered in the menu.
+    static let rates: [(name: String, rate: Float)] = [("Slower", 0.34), ("Normal", 0.42), ("Faster", 0.5)]
 
     @ObservationIgnored private var pipeline: AudioPipeline!
     @ObservationIgnored private var generation: UInt64 = 0
@@ -54,6 +57,7 @@ final class SpeechEngine {
         guard state == .paused else { return }
         pipeline.resume()
         state = .speaking
+        startTicking()
     }
 
     func stop() {
@@ -85,6 +89,7 @@ final class SpeechEngine {
     }
 
     /// Polls the pipeline every frame while speaking and morphs the mouth toward what is heard.
+    /// When paused, it lets the mouth settle to rest and then stops polling until resumed.
     private func startTicking() {
         ticker?.cancel()
         ticker = Task { [weak self] in
@@ -103,6 +108,10 @@ final class SpeechEngine {
         let next = mouth.interpolated(to: target, amount: 0.45)
         if next.distance(to: mouth) > 0.05 {
             mouth = next
+        } else if state != .speaking {
+            mouth = target
+            ticker?.cancel()
+            ticker = nil
         }
         if let word = snapshot.wordRange, word != currentWordRange {
             currentWordRange = word

@@ -7,12 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		02F6763F0DE31F7EE1500324 /* TextFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036A2825A7A10C92174940A3 /* TextFile.swift */; };
 		27995DEB793F0C1ADA976812 /* LaunchOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DDE6F103AA1A0863EBBCDE /* LaunchOptions.swift */; };
 		4087A43877BCC528BB4353CF /* AudioPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2BD0989CAC81FE03842813B /* AudioPipeline.swift */; };
 		457F5CC4C6010C6284A82223 /* SpeechEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 517FA019FCFDD641E4154634 /* SpeechEngine.swift */; };
 		696D1B52C2CB8A71C17783AA /* InputWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A75A69EBBB9F40916503A9C2 /* InputWindow.swift */; };
 		76A3F3066363F3ACA9CF45BB /* TalkingHeadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F3F7EFE55C244B60ECC91C /* TalkingHeadApp.swift */; };
 		7C9621CEF720B893884C946E /* Viseme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A7655C79DFE8D4210E2FD8C /* Viseme.swift */; };
+		A4BBE15DE75CBC9C38DA107E /* TalkingHeadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B2696B0C29356F17731412A /* TalkingHeadTests.swift */; };
 		AAE46F534502C5FC339159EB /* th in CopyFiles */ = {isa = PBXBuildFile; fileRef = 09C1929CC2D386392F17190B /* th */; };
 		B107E64913EA5A43B1C5A42D /* FaceWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441B996248F6D9A32B0F41A2 /* FaceWindow.swift */; };
 		B625FBCF305A0D47250571DC /* SpeechBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AF3A24653856415DEBFF16 /* SpeechBubble.swift */; };
@@ -20,6 +22,16 @@
 		CC26C42A8653F8E3CFF2A794 /* FaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0D88DA2C1C4406B3FC9F77 /* FaceView.swift */; };
 		D4E723FAD514E8FB12548C18 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E38B3474E7AF89A21A7E44D8 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1B4EAFB6E3C04F1C46E17375 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EF0C483B7C3DE652498A33D5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 605B4DB1A8E9C30E70D060E4;
+			remoteInfo = TalkingHead;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		B41FEE93E25198AF24D9EBA2 /* CopyFiles */ = {
@@ -35,7 +47,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		036A2825A7A10C92174940A3 /* TextFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFile.swift; sourceTree = "<group>"; };
 		09C1929CC2D386392F17190B /* th */ = {isa = PBXFileReference; path = th; sourceTree = "<group>"; };
+		0B2696B0C29356F17731412A /* TalkingHeadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TalkingHeadTests.swift; sourceTree = "<group>"; };
+		0E7D48BA07B3A81B1C5285DD /* TalkingHeadTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TalkingHeadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1D0D88DA2C1C4406B3FC9F77 /* FaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceView.swift; sourceTree = "<group>"; };
 		23A8F9FF61CE9D1287CD0904 /* SpokenTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpokenTextView.swift; sourceTree = "<group>"; };
 		441B996248F6D9A32B0F41A2 /* FaceWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceWindow.swift; sourceTree = "<group>"; };
@@ -56,6 +71,7 @@
 			children = (
 				F7EE01C78BABA6B037421AD4 /* CLI */,
 				9DA8A7EE099ED1AF6241C8E4 /* TalkingHead */,
+				CD12A2A1FAABEF3943F5A004 /* TalkingHeadTests */,
 				F6BBD8F8EDC86840DC9DC42B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -73,15 +89,25 @@
 				517FA019FCFDD641E4154634 /* SpeechEngine.swift */,
 				23A8F9FF61CE9D1287CD0904 /* SpokenTextView.swift */,
 				95F3F7EFE55C244B60ECC91C /* TalkingHeadApp.swift */,
+				036A2825A7A10C92174940A3 /* TextFile.swift */,
 				5A7655C79DFE8D4210E2FD8C /* Viseme.swift */,
 			);
 			path = TalkingHead;
+			sourceTree = "<group>";
+		};
+		CD12A2A1FAABEF3943F5A004 /* TalkingHeadTests */ = {
+			isa = PBXGroup;
+			children = (
+				0B2696B0C29356F17731412A /* TalkingHeadTests.swift */,
+			);
+			path = TalkingHeadTests;
 			sourceTree = "<group>";
 		};
 		F6BBD8F8EDC86840DC9DC42B /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				498639349FA6205F0E7E5AD5 /* TalkingHead.app */,
+				0E7D48BA07B3A81B1C5285DD /* TalkingHeadTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -97,6 +123,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		3AC6F9E160BD3A5AD9C29625 /* TalkingHeadTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DD63C64E745B12FDD4C041C1 /* Build configuration list for PBXNativeTarget "TalkingHeadTests" */;
+			buildPhases = (
+				0B487EEFBC5A74F2326542E4 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C3305E8A5225EFF88738F4DD /* PBXTargetDependency */,
+			);
+			name = TalkingHeadTests;
+			packageProductDependencies = (
+			);
+			productName = TalkingHeadTests;
+			productReference = 0E7D48BA07B3A81B1C5285DD /* TalkingHeadTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		605B4DB1A8E9C30E70D060E4 /* TalkingHead */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = BEF3E10C23FBFA16CCACF3D0 /* Build configuration list for PBXNativeTarget "TalkingHead" */;
@@ -146,6 +190,7 @@
 			projectRoot = "";
 			targets = (
 				605B4DB1A8E9C30E70D060E4 /* TalkingHead */,
+				3AC6F9E160BD3A5AD9C29625 /* TalkingHeadTests */,
 			);
 		};
 /* End PBXProject section */
@@ -184,6 +229,14 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		0B487EEFBC5A74F2326542E4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A4BBE15DE75CBC9C38DA107E /* TalkingHeadTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		93F94F7660D8961D25316136 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -197,11 +250,20 @@
 				457F5CC4C6010C6284A82223 /* SpeechEngine.swift in Sources */,
 				C7B8E401E07998D97E7DDCCB /* SpokenTextView.swift in Sources */,
 				76A3F3066363F3ACA9CF45BB /* TalkingHeadApp.swift in Sources */,
+				02F6763F0DE31F7EE1500324 /* TextFile.swift in Sources */,
 				7C9621CEF720B893884C946E /* Viseme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C3305E8A5225EFF88738F4DD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 605B4DB1A8E9C30E70D060E4 /* TalkingHead */;
+			targetProxy = 1B4EAFB6E3C04F1C46E17375 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1CDD5A9D7E2F3F1033BB5B4A /* Debug */ = {
@@ -227,6 +289,23 @@
 				SDKROOT = macosx;
 			};
 			name = Debug;
+		};
+		1D878960C6040436F8D71047 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.sandipchitale.TalkingHeadTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TalkingHead.app/Contents/MacOS/TalkingHead";
+			};
+			name = Release;
 		};
 		27121E062D86983011BF1552 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -312,6 +391,23 @@
 			};
 			name = Release;
 		};
+		DFA9E037EA547630FDBBEDB2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.sandipchitale.TalkingHeadTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TalkingHead.app/Contents/MacOS/TalkingHead";
+			};
+			name = Debug;
+		};
 		F6C5A00BD4035CB618C4D1EE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -396,6 +492,15 @@
 			buildConfigurations = (
 				1CDD5A9D7E2F3F1033BB5B4A /* Debug */,
 				DAA70B758E9533AB2E27B242 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DD63C64E745B12FDD4C041C1 /* Build configuration list for PBXNativeTarget "TalkingHeadTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DFA9E037EA547630FDBBEDB2 /* Debug */,
+				1D878960C6040436F8D71047 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

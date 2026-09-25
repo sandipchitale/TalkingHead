@@ -21,6 +21,8 @@ targets:
         buildPhase:
           copyFiles:
             destination: executables
+    scheme:
+      testTargets: [TalkingHeadTests]
     postBuildScripts:
       # Nested code in Contents/MacOS must be signed before Xcode signs the app.
       - name: Sign th
@@ -41,3 +43,13 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: "-"
+  TalkingHeadTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [TalkingHeadTests]
+    dependencies:
+      - target: TalkingHead
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sandipchitale.TalkingHeadTests
+        GENERATE_INFOPLIST_FILE: YES

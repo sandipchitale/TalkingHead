@@ -13,7 +13,10 @@ struct SpokenTextView: View {
         var id: Int { range.location }
     }
 
-    private var words: [Word] {
+    /// The text split into words, recomputed only when the text changes.
+    @State private var words: [Word] = []
+
+    private static func words(in text: String) -> [Word] {
         text.ranges(of: /\S+/).map { range in
             Word(range: NSRange(range, in: text), text: String(text[range]))
         }
@@ -48,7 +51,8 @@ struct SpokenTextView: View {
                     proxy.scrollTo(id, anchor: .center)
                 }
             }
-            .onChange(of: text) {
+            .onChange(of: text, initial: true) {
+                words = Self.words(in: text)
                 if let first = words.first {
                     proxy.scrollTo(first.id, anchor: .top)
                 }
