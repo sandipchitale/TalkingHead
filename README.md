@@ -12,7 +12,13 @@ engine while an animated portrait lip-syncs to it.
 - **Controls:** play/pause, type text, or pick a file to speak, from buttons below the head or from the
   menu bar.
 
-![Daniel](screenshots/Daniel.png) ![Samantha](screenshots/Samantha.png)
+![Daniel](screenshots/Daniel.png) 
+
+https://github.com/user-attachments/assets/fa5e0d48-b055-455c-b689-b5dfc53b3d40
+
+![Samantha](screenshots/Samantha.png)
+
+https://github.com/user-attachments/assets/e3388cf4-3ee7-45cc-b270-c060d18efc0e
 
 *The screenshots show an earlier single-window layout. The face now has its own window, and the text
 appears in the speech bubble.*
