@@ -136,5 +136,5 @@ and exit with status 2.
 ## Notes
 
 - The app sandbox is off so `th` can read any file you pass.
-- The portraits are 400×580 and 511×744 pixels, so they look slightly soft when enlarged on Retina
-  displays. Higher-resolution originals would look sharper.
+- The portraits are 360×360 pixels, so they look soft when enlarged on Retina displays.
+  Higher-resolution originals would look sharper.

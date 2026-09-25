@@ -79,8 +79,8 @@ final class SpeechBubble {
         guard let panel, let parent else { return }
         let frame = parent.frame
         let screen = (parent.screen ?? NSScreen.main)?.visibleFrame ?? .infinite
-        // The mouth sits a little below the middle of the face window (AppKit y runs upward).
-        let mouthY = frame.minY + frame.height * 0.455
+        // The mouth is about halfway down the face window (AppKit y runs upward).
+        let mouthY = frame.minY + frame.height * 0.5
         // A small gap between the face window and the tip of the bubble's tail.
         let gap: CGFloat = 12
 

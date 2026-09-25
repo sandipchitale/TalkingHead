@@ -85,20 +85,20 @@ struct Portrait: Identifiable {
     }
 
     static let man = Portrait(
-        voiceName: "Daniel", imageName: "Man", size: CGSize(width: 400, height: 580),
-        mouthPatchRect: CGRect(x: 144, y: 296, width: 122, height: 54),
-        eyelidsRect: CGRect(x: 116, y: 196, width: 176, height: 50),
-        eyes: [CGRect(x: 125, y: 205, width: 56, height: 33), CGRect(x: 227, y: 205, width: 55, height: 33)],
-        mouthCenter: CGPoint(x: 204, y: 318), mouthScale: 1.3,
-        lip: Color(red: 0.70, green: 0.42, blue: 0.38))
+        voiceName: "Daniel", imageName: "Man", size: CGSize(width: 360, height: 360),
+        mouthPatchRect: CGRect(x: 146, y: 174, width: 68, height: 24),
+        eyelidsRect: CGRect(x: 126, y: 110, width: 114, height: 36),
+        eyes: [CGRect(x: 136, y: 120, width: 30, height: 20), CGRect(x: 195, y: 120, width: 32, height: 20)],
+        mouthCenter: CGPoint(x: 180, y: 184), mouthScale: 0.78,
+        lip: Color(red: 0.72, green: 0.45, blue: 0.40))
 
     static let woman = Portrait(
-        voiceName: "Samantha", imageName: "Woman", size: CGSize(width: 511, height: 744),
-        mouthPatchRect: CGRect(x: 202, y: 380, width: 144, height: 58),
-        eyelidsRect: CGRect(x: 158, y: 252, width: 230, height: 70),
-        eyes: [CGRect(x: 171, y: 264, width: 72, height: 57), CGRect(x: 304, y: 262, width: 71, height: 57)],
-        mouthCenter: CGPoint(x: 273, y: 405), mouthScale: 1.5,
-        lip: Color(red: 0.76, green: 0.42, blue: 0.44))
+        voiceName: "Samantha", imageName: "Woman", size: CGSize(width: 360, height: 360),
+        mouthPatchRect: CGRect(x: 151, y: 146, width: 62, height: 26),
+        eyelidsRect: CGRect(x: 114, y: 86, width: 132, height: 44),
+        eyes: [CGRect(x: 125, y: 95, width: 41, height: 27), CGRect(x: 197, y: 95, width: 38, height: 27)],
+        mouthCenter: CGPoint(x: 182, y: 157), mouthScale: 0.7,
+        lip: Color(red: 0.82, green: 0.50, blue: 0.50))
 
     static let all = [man, woman]
 

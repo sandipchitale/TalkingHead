@@ -32,7 +32,7 @@ struct TalkingHeadApp: App {
             FaceWindow(options: options)
                 .environment(speech)
         }
-        .defaultSize(width: 420, height: 650)
+        .defaultSize(width: 420, height: 500)
         .defaultLaunchBehavior(options.isCommandLine ? .presented : .suppressed)
         .restorationBehavior(.disabled)
         .windowResizability(.contentMinSize)
