@@ -23,8 +23,11 @@ https://github.com/user-attachments/assets/fa5e0d48-b055-455c-b689-b5dfc53b3d40
 
 https://github.com/user-attachments/assets/e3388cf4-3ee7-45cc-b270-c060d18efc0e
 
-**Feature tour:** [`docs/index.html`](docs/index.html) is a page where every feature has a 🔊 **Explain**
-link that makes Talking Head explain it out loud. It also shows how to add such links to your own pages.
+**Feature tour:** [sandipchitale.github.io/TalkingHead](https://sandipchitale.github.io/TalkingHead/) is a
+page where every feature has a 🔊 **Explain** link that makes Talking Head explain it out loud. The links
+need Talking Head installed. On the live page, **📖 Read this card** also shows Talking Head reading a
+passage straight from the page. The page shows how to add such links to your own pages, and its
+source is [`docs/index.html`](docs/index.html).
 
 ## Requirements
 
