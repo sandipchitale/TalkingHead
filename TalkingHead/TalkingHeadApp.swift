@@ -10,6 +10,7 @@ struct TalkingHeadApp: App {
     private let options = LaunchOptions.launch
     /// Shared by the menu, the face window, its speech bubble and the typing window.
     @State private var speech: SpeechEngine
+    @State private var faceSettings = FaceWindowSettings(options: LaunchOptions.launch)
     /// Only the applet started from Finder (or at login) shows the menu bar item; `th` runs
     /// don't add a second one.
     @State private var showsMenuBarItem = !LaunchOptions.launch.isCommandLine
@@ -18,19 +19,23 @@ struct TalkingHeadApp: App {
         let speech = SpeechEngine()
         speech.portraitID = LaunchOptions.launch.portrait.id
         _speech = State(initialValue: speech)
+        ExternalRequests.shared = ExternalRequests(speech: speech)
     }
 
     var body: some Scene {
         MenuBarExtra(isInserted: $showsMenuBarItem) {
             MenuBarMenu()
                 .environment(speech)
+                .environment(faceSettings)
         } label: {
-            Image(systemName: speech.state == .speaking ? "person.wave.2.fill" : "person.wave.2")
+            MenuBarLabel()
+                .environment(speech)
         }
 
         Window("Talking Head", id: FaceWindow.id) {
             FaceWindow(options: options)
                 .environment(speech)
+                .environment(faceSettings)
         }
         .defaultSize(width: 420, height: 500)
         .defaultLaunchBehavior(options.isCommandLine ? .presented : .suppressed)
@@ -49,14 +54,34 @@ struct TalkingHeadApp: App {
     }
 }
 
+/// The menu bar icon. It stays alive while the applet runs, so it also opens the face window
+/// when other apps send text to speak (`SpeechEngine.requestFace()`).
+struct MenuBarLabel: View {
+    @Environment(SpeechEngine.self) private var speech
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Image(systemName: speech.state == .speaking ? "person.wave.2.fill" : "person.wave.2")
+            // `initial` covers a request made while launching (e.g. by a talkinghead:// URL),
+            // before this view existed.
+            .onChange(of: speech.faceRequests, initial: true) {
+                guard speech.faceRequests > 0 else { return }
+                openWindow(id: FaceWindow.id)
+                NSApp.activate()
+            }
+    }
+}
+
 /// The menu shown from the menu bar item.
 struct MenuBarMenu: View {
     @Environment(SpeechEngine.self) private var speech
+    @Environment(FaceWindowSettings.self) private var faceSettings
     @Environment(\.openWindow) private var openWindow
     @State private var launchesAtLogin = MenuBarMenu.isLoginItem
 
     var body: some View {
         @Bindable var speech = speech
+        @Bindable var faceSettings = faceSettings
 
         Button("Show Talking Head") { show(FaceWindow.id) }
         Button("Type Text to Speak…") { show(InputWindow.id) }
@@ -86,6 +111,7 @@ struct MenuBarMenu: View {
 
         Divider()
 
+        Toggle("Always on Top", isOn: $faceSettings.isAlwaysOnTop)
         Toggle("Launch at Login", isOn: Binding(get: { launchesAtLogin }, set: setLaunchAtLogin))
 
         Button("Quit Talking Head") { NSApp.terminate(nil) }
@@ -128,10 +154,19 @@ struct MenuBarMenu: View {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // Before launch finishes, so a talkinghead:// URL that launched the app is received.
+        ExternalRequests.shared?.registerURLHandler()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // When started from a terminal, bring the talking head to the front.
         if LaunchOptions.launch.isCommandLine {
+            // When started from a terminal, bring the talking head to the front.
             NSApp.activate()
+        } else {
+            // The "Speak with Talking Head" service (see NSServices in Info.plist).
+            NSApp.servicesProvider = ExternalRequests.shared
+            NSUpdateDynamicServices()
         }
     }
 

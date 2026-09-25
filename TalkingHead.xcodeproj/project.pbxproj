@@ -9,8 +9,10 @@
 /* Begin PBXBuildFile section */
 		02F6763F0DE31F7EE1500324 /* TextFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036A2825A7A10C92174940A3 /* TextFile.swift */; };
 		27995DEB793F0C1ADA976812 /* LaunchOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DDE6F103AA1A0863EBBCDE /* LaunchOptions.swift */; };
+		283C7931367C3EAB3C50EDF6 /* ExternalRequests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5923217C408164FF5FAF0771 /* ExternalRequests.swift */; };
 		4087A43877BCC528BB4353CF /* AudioPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2BD0989CAC81FE03842813B /* AudioPipeline.swift */; };
 		457F5CC4C6010C6284A82223 /* SpeechEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 517FA019FCFDD641E4154634 /* SpeechEngine.swift */; };
+		586CD27F801D4FAE483C11D8 /* FaceWindowSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B01B6ABF39DDC16FBAF13EC /* FaceWindowSettings.swift */; };
 		696D1B52C2CB8A71C17783AA /* InputWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A75A69EBBB9F40916503A9C2 /* InputWindow.swift */; };
 		76A3F3066363F3ACA9CF45BB /* TalkingHeadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F3F7EFE55C244B60ECC91C /* TalkingHeadApp.swift */; };
 		7C9621CEF720B893884C946E /* Viseme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A7655C79DFE8D4210E2FD8C /* Viseme.swift */; };
@@ -18,7 +20,9 @@
 		AAE46F534502C5FC339159EB /* th in CopyFiles */ = {isa = PBXBuildFile; fileRef = 09C1929CC2D386392F17190B /* th */; };
 		B107E64913EA5A43B1C5A42D /* FaceWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441B996248F6D9A32B0F41A2 /* FaceWindow.swift */; };
 		B625FBCF305A0D47250571DC /* SpeechBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AF3A24653856415DEBFF16 /* SpeechBubble.swift */; };
+		B6BDA1464BC1FEF240CB077C /* WebPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4D7E298D16DAE29A7609EE /* WebPage.swift */; };
 		C7B8E401E07998D97E7DDCCB /* SpokenTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23A8F9FF61CE9D1287CD0904 /* SpokenTextView.swift */; };
+		CB5654CC42015A26E662E7BC /* TextFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 125190569898D818A70DBA13 /* TextFragment.swift */; };
 		CC26C42A8653F8E3CFF2A794 /* FaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0D88DA2C1C4406B3FC9F77 /* FaceView.swift */; };
 		D4E723FAD514E8FB12548C18 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E38B3474E7AF89A21A7E44D8 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
@@ -51,14 +55,19 @@
 		09C1929CC2D386392F17190B /* th */ = {isa = PBXFileReference; path = th; sourceTree = "<group>"; };
 		0B2696B0C29356F17731412A /* TalkingHeadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TalkingHeadTests.swift; sourceTree = "<group>"; };
 		0E7D48BA07B3A81B1C5285DD /* TalkingHeadTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TalkingHeadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		125190569898D818A70DBA13 /* TextFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFragment.swift; sourceTree = "<group>"; };
+		1B01B6ABF39DDC16FBAF13EC /* FaceWindowSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceWindowSettings.swift; sourceTree = "<group>"; };
 		1D0D88DA2C1C4406B3FC9F77 /* FaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceView.swift; sourceTree = "<group>"; };
 		23A8F9FF61CE9D1287CD0904 /* SpokenTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpokenTextView.swift; sourceTree = "<group>"; };
 		441B996248F6D9A32B0F41A2 /* FaceWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceWindow.swift; sourceTree = "<group>"; };
 		498639349FA6205F0E7E5AD5 /* TalkingHead.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TalkingHead.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		517FA019FCFDD641E4154634 /* SpeechEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechEngine.swift; sourceTree = "<group>"; };
+		5923217C408164FF5FAF0771 /* ExternalRequests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalRequests.swift; sourceTree = "<group>"; };
 		5A7655C79DFE8D4210E2FD8C /* Viseme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Viseme.swift; sourceTree = "<group>"; };
+		62F4B0A2B8748E4FB9304B20 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		64AF3A24653856415DEBFF16 /* SpeechBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechBubble.swift; sourceTree = "<group>"; };
 		67DDE6F103AA1A0863EBBCDE /* LaunchOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchOptions.swift; sourceTree = "<group>"; };
+		7D4D7E298D16DAE29A7609EE /* WebPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebPage.swift; sourceTree = "<group>"; };
 		95F3F7EFE55C244B60ECC91C /* TalkingHeadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TalkingHeadApp.swift; sourceTree = "<group>"; };
 		A75A69EBBB9F40916503A9C2 /* InputWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputWindow.swift; sourceTree = "<group>"; };
 		E2BD0989CAC81FE03842813B /* AudioPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPipeline.swift; sourceTree = "<group>"; };
@@ -81,8 +90,11 @@
 			children = (
 				E38B3474E7AF89A21A7E44D8 /* Assets.xcassets */,
 				E2BD0989CAC81FE03842813B /* AudioPipeline.swift */,
+				5923217C408164FF5FAF0771 /* ExternalRequests.swift */,
 				1D0D88DA2C1C4406B3FC9F77 /* FaceView.swift */,
 				441B996248F6D9A32B0F41A2 /* FaceWindow.swift */,
+				1B01B6ABF39DDC16FBAF13EC /* FaceWindowSettings.swift */,
+				62F4B0A2B8748E4FB9304B20 /* Info.plist */,
 				A75A69EBBB9F40916503A9C2 /* InputWindow.swift */,
 				67DDE6F103AA1A0863EBBCDE /* LaunchOptions.swift */,
 				64AF3A24653856415DEBFF16 /* SpeechBubble.swift */,
@@ -90,7 +102,9 @@
 				23A8F9FF61CE9D1287CD0904 /* SpokenTextView.swift */,
 				95F3F7EFE55C244B60ECC91C /* TalkingHeadApp.swift */,
 				036A2825A7A10C92174940A3 /* TextFile.swift */,
+				125190569898D818A70DBA13 /* TextFragment.swift */,
 				5A7655C79DFE8D4210E2FD8C /* Viseme.swift */,
+				7D4D7E298D16DAE29A7609EE /* WebPage.swift */,
 			);
 			path = TalkingHead;
 			sourceTree = "<group>";
@@ -242,8 +256,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				4087A43877BCC528BB4353CF /* AudioPipeline.swift in Sources */,
+				283C7931367C3EAB3C50EDF6 /* ExternalRequests.swift in Sources */,
 				CC26C42A8653F8E3CFF2A794 /* FaceView.swift in Sources */,
 				B107E64913EA5A43B1C5A42D /* FaceWindow.swift in Sources */,
+				586CD27F801D4FAE483C11D8 /* FaceWindowSettings.swift in Sources */,
 				696D1B52C2CB8A71C17783AA /* InputWindow.swift in Sources */,
 				27995DEB793F0C1ADA976812 /* LaunchOptions.swift in Sources */,
 				B625FBCF305A0D47250571DC /* SpeechBubble.swift in Sources */,
@@ -251,7 +267,9 @@
 				C7B8E401E07998D97E7DDCCB /* SpokenTextView.swift in Sources */,
 				76A3F3066363F3ACA9CF45BB /* TalkingHeadApp.swift in Sources */,
 				02F6763F0DE31F7EE1500324 /* TextFile.swift in Sources */,
+				CB5654CC42015A26E662E7BC /* TextFragment.swift in Sources */,
 				7C9621CEF720B893884C946E /* Viseme.swift in Sources */,
+				B6BDA1464BC1FEF240CB077C /* WebPage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -277,6 +295,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TalkingHead/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Talking Head";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
@@ -378,6 +397,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TalkingHead/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Talking Head";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;

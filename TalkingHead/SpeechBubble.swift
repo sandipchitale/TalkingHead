@@ -53,9 +53,16 @@ final class SpeechBubble {
         if isShown { show() } else { hide() }
     }
 
+    /// Keeps the bubble at the face window's level, e.g. when that becomes always-on-top.
+    func matchParentLevel() {
+        guard let panel, let parent else { return }
+        panel.level = parent.level
+    }
+
     private func show() {
         guard let panel, let parent else { return }
         reposition()
+        panel.level = parent.level
         parent.addChildWindow(panel, ordered: .above)
     }
 

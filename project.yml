@@ -23,6 +23,26 @@ targets:
             destination: executables
     scheme:
       testTargets: [TalkingHeadTests]
+    info:
+      path: TalkingHead/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # talkinghead://speak?text=…|url=…[&voice=male|female]
+        CFBundleURLTypes:
+          - CFBundleURLName: com.sandipchitale.TalkingHead
+            CFBundleURLSchemes: [talkinghead]
+        # Services → "Speak with Talking Head" for selected text or links.
+        NSServices:
+          - NSMenuItem:
+              default: Speak with Talking Head
+            NSMessage: speakSelection
+            NSPortName: TalkingHead
+            NSSendTypes: [public.utf8-plain-text, public.url]
+            NSRequiredContext: {}
+        # Pages to read may be plain http.
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
     postBuildScripts:
       # Nested code in Contents/MacOS must be signed before Xcode signs the app.
       - name: Sign th

@@ -27,6 +27,7 @@ animated face which will sync with the speech. This should run on MacOS.
   - **Play/Pause** (Space). When idle, it replays the last text.
   - **Type text to speak** (window icon) opens the typing window.
   - **Select a file to speak** (file icon) picks a text file and speaks it.
+  - **Pin/Unpin** (pin icon, filled when pinned) keeps the window and its bubble above other windows.
 
 ### Speech bubble
 - A rounded speech-bubble window beside the face window, a little apart from it, with its tail
@@ -41,23 +42,37 @@ animated face which will sync with the speech. This should run on MacOS.
 ### Menu bar applet
 - Runs as a menu bar applet: no Dock icon and no app menu.
 - The menu has: Show Talking Head, Type Text to Speak…, Play/Pause, Stop, Voice (Male/Female),
-  Speed (Slower/Normal/Faster), Launch at Login, and Quit.
+  Speed (Slower/Normal/Faster), Always on Top, Launch at Login, and Quit.
+- **Always on Top** matches the face window's pin button and is remembered between launches.
 - Launched from Finder or at login, it starts with only the menu bar item and keeps running when its
   windows are closed.
 
 ### Command line: `th`
 - `th` is packaged inside the app bundle (`TalkingHead.app/Contents/MacOS/th`).
-- Usage: `th [-v|--voice male|female] [-t|--tty] [-f|--file path] [text ...]`
+- Usage: `th [-v|--voice male|female] [-t|--tty] [-f|--file path] [-u|--url URL] [--always-on-top] [text ...]`
   - `-v`/`--voice`: `male` selects Daniel (the default), `female` selects Samantha.
   - `-f`/`--file`: speak this file (`-` reads standard input).
+  - `-u`/`--url`: speak an http(s) web page, or only the passage its text fragment (`#:~:text=…`)
+    refers to.
   - `-t`/`--tty`: read the text typed at the terminal (end with Control-D).
+  - `--always-on-top`: keep the talking head above other windows for this run (not saved).
   - `text ...`: the non-option arguments, joined with spaces, are the text to speak. `--` ends the
     options, so the text can start with `-`.
-- Only one text source may be given: text arguments, `--file` or `--tty`. With none of them, standard
+- Only one text source may be given: text arguments, `--file`, `--url` or `--tty`. With none of them, standard
   input is read when it is not a terminal (piped or redirected); otherwise `th` just shows the talking
   head.
 - When given text, `th` shows the face, speaks, and quits when done. It stays open if the typing window
   or file picker was used.
 - `th` quits when its windows are closed. It doesn't add a menu bar item of its own.
-- `-h`/`--help` prints usage. Invalid options, voices or unreadable files print an error and exit with
-  status 2.
+- `-h`/`--help` prints usage. Invalid options, voices, unreadable files or pages, and text fragments
+  not found on the page print an error and exit with status 2.
+
+### Speaking from other apps
+- **Services menu:** "Speak with Talking Head" speaks the selected text in any app (e.g. an email in
+  Mail). If the selection is a single web link, the page (or its highlighted passage) is spoken. The
+  face window opens.
+- **URL scheme:** `talkinghead://speak?text=…` or `talkinghead://speak?url=…`, with optional
+  `voice=male|female`. Opening such a link launches Talking Head if needed and speaks straight away.
+- **Text fragments:** for URLs with `#:~:text=[prefix-,]start[,end][,-suffix]`, only the referenced
+  passage is spoken (case- and whitespace-insensitive). URLs without a fragment speak the whole page's
+  text; a fragment that can't be found is reported as an error.

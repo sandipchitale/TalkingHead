@@ -114,3 +114,95 @@ struct LaunchOptionsTests {
         return url
     }
 }
+
+struct TextFragmentTests {
+    let page = """
+        Talking Head reads text aloud.   The quick brown fox
+        jumps over the lazy dog. Then the fox, tired, goes home. The fox sleeps.
+        """
+
+    @Test func parsesStartEndPrefixAndSuffix() throws {
+        let url = try #require(URL(string: "https://example.com/page#:~:text=the-,fox,home,-.%20The"))
+        #expect(TextFragment(url: url) == TextFragment(prefix: "the", start: "fox", end: "home", suffix: ". The"))
+    }
+
+    @Test func decodesPercentEncodedCommasAndDashes() throws {
+        let url = try #require(URL(string: "https://example.com/#:~:text=fox%2C%20tired%2C%20goes"))
+        #expect(TextFragment(url: url) == TextFragment(start: "fox, tired, goes"))
+    }
+
+    @Test func ignoresURLsWithoutATextDirective() throws {
+        #expect(TextFragment(url: try #require(URL(string: "https://example.com/#section"))) == nil)
+        #expect(TextFragment(url: try #require(URL(string: "https://example.com/"))) == nil)
+    }
+
+    @Test func findsStartOnlyIgnoringCaseAndWhitespace() throws {
+        // The match keeps the page's own text, including its line break.
+        let passage = try #require(TextFragment(start: "QUICK brown   fox jumps").passage(in: page))
+        #expect(passage.hasPrefix("quick brown fox"))
+        #expect(passage.hasSuffix("jumps"))
+    }
+
+    @Test func findsStartThroughEnd() {
+        #expect(TextFragment(start: "Then the fox", end: "goes home").passage(in: page) == "Then the fox, tired, goes home")
+    }
+
+    @Test func prefixAndSuffixPickTheRightOccurrence() {
+        // "fox" appears three times; the prefix and suffix select the one before "sleeps".
+        #expect(TextFragment(prefix: "The", start: "fox", suffix: "sleeps").passage(in: page) == "fox")
+        #expect(TextFragment(prefix: "the", start: "fox", end: "home").passage(in: page) == "fox, tired, goes home")
+    }
+
+    @Test func returnsNilWhenNotFound() {
+        #expect(TextFragment(start: "purple elephant").passage(in: page) == nil)
+    }
+}
+
+struct ExternalRequestTests {
+    @Test func textRequestWithVoice() throws {
+        let url = try #require(URL(string: "talkinghead://speak?text=Hello%20there&voice=female"))
+        let request = try #require(ExternalRequests.Request(url: url))
+        #expect(request.source == .text("Hello there"))
+        #expect(request.portrait == "Samantha")
+    }
+
+    @Test func urlRequest() throws {
+        let target = "https://example.com/#:~:text=Example"
+        let encoded = try #require(target.addingPercentEncoding(withAllowedCharacters: .alphanumerics))
+        let url = try #require(URL(string: "talkinghead://speak?url=\(encoded)"))
+        #expect(ExternalRequests.Request(url: url)?.source == .url(try #require(URL(string: target))))
+    }
+
+    @Test func rejectsOtherSchemesAndEmptyRequests() throws {
+        #expect(ExternalRequests.Request(url: try #require(URL(string: "https://example.com/?text=hi"))) == nil)
+        #expect(ExternalRequests.Request(url: try #require(URL(string: "talkinghead://speak"))) == nil)
+        #expect(ExternalRequests.Request(url: try #require(URL(string: "talkinghead://speak?url=ftp://x"))) == nil)
+    }
+
+    @Test func webURLAcceptsOnlySingleHTTPLinks() {
+        #expect(ExternalRequests.webURL("https://apple.com/mac") != nil)
+        #expect(ExternalRequests.webURL("see https://apple.com") == nil)
+        #expect(ExternalRequests.webURL("mailto:someone@example.com") == nil)
+        #expect(ExternalRequests.webURL("hello") == nil)
+    }
+}
+
+struct AlwaysOnTopOptionTests {
+    @Test func flagIsOffByDefaultAndOnWhenGiven() {
+        #expect(!LaunchOptions.parse(["Hello"], isCLI: true).alwaysOnTop)
+        let options = LaunchOptions.parse(["--always-on-top", "Hello", "there"], isCLI: true)
+        #expect(options.alwaysOnTop)
+        guard case .speak(let text) = options.mode else { Issue.record("expected .speak"); return }
+        #expect(text == "Hello there")
+    }
+}
+
+struct URLOptionTests {
+    @Test func urlOption() throws {
+        guard case .speakURL(let url) = LaunchOptions.parse(["-u", "https://example.com/#:~:text=Example"], isCLI: true).mode else {
+            Issue.record("expected .speakURL"); return
+        }
+        #expect(url.host == "example.com")
+        #expect(LaunchOptions.parse(["--url=https://example.com"], isCLI: true).speaksAndQuits)
+    }
+}

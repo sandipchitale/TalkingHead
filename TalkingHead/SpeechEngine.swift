@@ -20,6 +20,10 @@ final class SpeechEngine {
     let portraits = Portrait.all.sorted { $0.voiceName < $1.voiceName }
     var portraitID = Portrait.man.id
     var portrait: Portrait { portraits.first { $0.id == portraitID } ?? .man }
+    /// Incremented to ask for the face window to be shown (e.g. when another app sends text);
+    /// the menu bar item's view, which can open windows, reacts to it.
+    private(set) var faceRequests = 0
+
     /// Speech rate, from `AVSpeechUtteranceMinimumSpeechRate` to `AVSpeechUtteranceMaximumSpeechRate`;
     /// the default is a little slower than the system's. Applies from the next utterance.
     var rate: Float = SpeechEngine.rates[1].rate
@@ -63,6 +67,10 @@ final class SpeechEngine {
     func stop() {
         pipeline.stop()
         finish()
+    }
+
+    func requestFace() {
+        faceRequests += 1
     }
 
     /// Play/pause: pauses while speaking, resumes when paused, and replays the last

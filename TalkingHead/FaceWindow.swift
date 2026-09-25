@@ -4,14 +4,16 @@ import UniformTypeIdentifiers
 
 /// The talking head in its own resizable window, titled with the voice name. Clicking the
 /// head shows or hides the speech bubble; the buttons below it play/pause, open the window
-/// for typing text, and pick a text file to speak.
+/// for typing text, pick a text file to speak, and pin the window above other windows.
 struct FaceWindow: View {
     static let id = "face"
 
     let options: LaunchOptions
     @Environment(SpeechEngine.self) private var speech
+    @Environment(FaceWindowSettings.self) private var settings
     @Environment(\.openWindow) private var openWindow
     @State private var bubble = SpeechBubble()
+    @State private var window: NSWindow?
     /// Set once the typing window or file picker has been used, so the app no longer quits
     /// after speaking.
     @State private var isInteractive = false
@@ -30,18 +32,31 @@ struct FaceWindow: View {
         .frame(minWidth: 220, maxWidth: .infinity, minHeight: 330, maxHeight: .infinity)
         .navigationTitle(speech.portrait.voiceName)
         .background(WindowAccessor { window in
+            self.window = window
             bringToFront(window)
             bubble.attach(to: window, content: SpeechBubbleView(bubble: bubble).environment(speech))
+            applyAlwaysOnTop()
         })
+        .onChange(of: settings.isAlwaysOnTop) { applyAlwaysOnTop() }
         .task {
-            if case .speak(let text) = options.mode {
+            switch options.mode {
+            case .speak(let text):
                 speech.speak(text)
+            case .speakURL(let url):
+                do {
+                    speech.speak(try await WebPage.speakableText(for: url))
+                } catch {
+                    FileHandle.standardError.write(Data("th: can't read \(url.absoluteString): \(error.localizedDescription)\n".utf8))
+                    exit(2)
+                }
+            case .menuBar, .face:
+                break
             }
         }
         .onChange(of: speech.state) { old, new in
             // From the command line, quit once the text has been spoken (unless the user has
             // opened the typing window to carry on).
-            if case .speak = options.mode, !isInteractive, old != .idle, new == .idle {
+            if options.speaksAndQuits, !isInteractive, old != .idle, new == .idle {
                 Task {
                     try? await Task.sleep(for: .milliseconds(600))
                     NSApp.terminate(nil)
@@ -71,6 +86,12 @@ struct FaceWindow: View {
                 isPickingFile = true
             }
             .help("Select a file to speak")
+
+            Button(settings.isAlwaysOnTop ? "Unpin" : "Pin",
+                   systemImage: settings.isAlwaysOnTop ? "pin.fill" : "pin") {
+                settings.isAlwaysOnTop.toggle()
+            }
+            .help(settings.isAlwaysOnTop ? "Stop keeping on top of other windows" : "Keep on top of other windows")
         }
         .labelStyle(.iconOnly)
         .buttonStyle(.glass)
@@ -83,6 +104,13 @@ struct FaceWindow: View {
                 speak(fileAt: url)
             }
         }
+    }
+
+    /// Floats the window (and its bubble) above other apps' windows, or returns it to normal.
+    private func applyAlwaysOnTop() {
+        guard let window else { return }
+        window.level = settings.isAlwaysOnTop ? .floating : .normal
+        bubble.matchParentLevel()
     }
 
     /// Speaks a text file (see `TextFile`).
