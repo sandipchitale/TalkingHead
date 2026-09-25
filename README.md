@@ -83,16 +83,18 @@ Its menu offers:
 ## Command line: `th`
 
 ```
-th [-v|--voice male|female] [-t|--tty] [file]
+th [-v|--voice male|female] [-t|--tty] [-f|--file path] [text ...]
 ```
 
 | Invocation | Result |
 |---|---|
-| `th notes.txt` | Speaks the file (plain text, RTF, HTML, Word…), then quits |
+| `th Build finished` | Speaks the arguments as text, then quits |
+| `th -f notes.txt` | Speaks the file (plain text, RTF, HTML, Word…), then quits |
 | `echo "Hello" \| th`, `th < notes.txt` | Speaks piped standard input, then quits |
 | `th -t` | Reads text typed at the terminal (end with Control-D), speaks it, then quits |
 | `th` at a terminal | Shows the talking head only; use its toolbar to type text or pick a file |
 | `th -v female …` | Uses Samantha instead of Daniel (the default, `male`) |
+| `th -- -5 degrees` | `--` ends the options, so text can start with `-` |
 
 `th` quits when you close its windows, so the terminal gets its prompt back. If you use the typing
 window or file picker, it stays open after speaking. `th --help` prints usage. Errors print a message

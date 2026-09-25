@@ -47,12 +47,15 @@ animated face which will sync with the speech. This should run on MacOS.
 
 ### Command line: `th`
 - `th` is packaged inside the app bundle (`TalkingHead.app/Contents/MacOS/th`).
-- Usage: `th [-v|--voice male|female] [-t|--tty] [file]`
+- Usage: `th [-v|--voice male|female] [-t|--tty] [-f|--file path] [text ...]`
   - `-v`/`--voice`: `male` selects Daniel (the default), `female` selects Samantha.
+  - `-f`/`--file`: speak this file (`-` reads standard input).
   - `-t`/`--tty`: read the text typed at the terminal (end with Control-D).
-  - `file`: speak this file.
-- Without a file, standard input is read only when it is not a terminal (piped or redirected), or with
-  `--tty`. Otherwise `th` just shows the talking head.
+  - `text ...`: the non-option arguments, joined with spaces, are the text to speak. `--` ends the
+    options, so the text can start with `-`.
+- Only one text source may be given: text arguments, `--file` or `--tty`. With none of them, standard
+  input is read when it is not a terminal (piped or redirected); otherwise `th` just shows the talking
+  head.
 - When given text, `th` shows the face, speaks, and quits when done. It stays open if the typing window
   or file picker was used.
 - `th` quits when its windows are closed. It doesn't add a menu bar item of its own.

@@ -5,11 +5,10 @@ import Foundation
 /// The `th` script inside the app bundle runs the app executable with the user's arguments
 /// packed into a `-THArguments` value (see `current()`):
 ///
-///     th [-v|--voice male|female] [-t|--tty] [file]
+///     th [-v|--voice male|female] [-t|--tty] [-f|--file path] [text ...]
 ///
-/// The text comes from `file` or, if there is none, from standard input when that is piped
-/// or redirected, or typed at the terminal with `--tty`. Otherwise just the talking head
-/// is shown. Launched from Finder (no `-THArguments`), the app starts quietly in the menu bar.
+/// The text comes from the non-option arguments, the `--file`, the terminal with `--tty`, or
+/// standard input when that is piped or redirected. Otherwise just the talking head is shown. Launched from Finder (no `-THArguments`), the app starts quietly in the menu bar.
 struct LaunchOptions {
     /// The options this process was launched with.
     static let launch = LaunchOptions.current()
@@ -32,14 +31,17 @@ struct LaunchOptions {
     var portrait: Portrait
 
     static let usage = """
-        usage: th [-v|--voice male|female] [-t|--tty] [file]
+        usage: th [-v|--voice male|female] [-t|--tty] [-f|--file path] [text ...]
 
-        Speaks the text in file, or in piped standard input if no file is given, with an
-        animated talking head, then quits. With neither, just shows the talking head.
+        Speaks text with an animated talking head, then quits. The text is the arguments,
+        the file, what you type at the terminal (--tty), or piped standard input. With none
+        of these, just shows the talking head.
 
           -v, --voice VOICE  male (Daniel, the default) or female (Samantha)
+          -f, --file PATH    speak this file (plain text, RTF, HTML, Word…; - for stdin)
           -t, --tty          read the text typed at the terminal (end with Control-D)
           -h, --help         show this help
+          --                 treat everything after this as text, even if it starts with -
         """
 
     /// Starting text for the typing window.
@@ -65,10 +67,14 @@ struct LaunchOptions {
         var portrait = Portrait.man
         var path: String?
         var readsTerminal = false
+        var words: [String] = []
 
         var remaining = arguments[...]
         while let argument = remaining.popFirst() {
             switch argument {
+            case "--":
+                words += remaining
+                remaining = []
             case "-h", "--help":
                 print(usage)
                 exit(0)
@@ -79,19 +85,29 @@ struct LaunchOptions {
                 portrait = voice(named: name)
             case _ where argument.hasPrefix("--voice="):
                 portrait = voice(named: String(argument.dropFirst("--voice=".count)))
-            case _ where argument.hasPrefix("-") && argument != "-":
+            case "-f", "--file":
+                guard let value = remaining.popFirst() else { fail("\(argument) needs a file path") }
+                guard path == nil else { fail("only one file can be given") }
+                path = value
+            case _ where argument.hasPrefix("--file="):
+                guard path == nil else { fail("only one file can be given") }
+                path = String(argument.dropFirst("--file=".count))
+            case _ where argument.hasPrefix("-") && argument.count > 1:
                 fail("unknown option \(argument)")
             default:
-                guard path == nil else { fail("only one file can be given") }
-                path = argument
+                words.append(argument)
             }
         }
+        let sources = [!words.isEmpty, path != nil, readsTerminal].filter { $0 }.count
+        guard sources <= 1 else { fail("give text arguments, --file or --tty, not more than one") }
 
         if !isCLI {
             return LaunchOptions(mode: .menuBar, portrait: portrait)
         }
         let text: String
-        if let path {
+        if !words.isEmpty {
+            text = words.joined(separator: " ")
+        } else if let path {
             text = readText(from: path)
         } else if readsTerminal || isatty(STDIN_FILENO) == 0 {
             text = readStandardInput()

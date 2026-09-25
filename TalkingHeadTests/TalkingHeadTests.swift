@@ -66,7 +66,7 @@ struct LaunchOptionsTests {
 
     @Test func speaksAPlainTextFile() throws {
         let url = try temporaryFile("Hello from a file.", extension: "txt")
-        let options = LaunchOptions.parse(["-v", "female", url.path], isCLI: true)
+        let options = LaunchOptions.parse(["-v", "female", "--file", url.path], isCLI: true)
         guard case .speak(let text) = options.mode else { Issue.record("expected .speak"); return }
         #expect(text.trimmingCharacters(in: .whitespacesAndNewlines) == "Hello from a file.")
         #expect(options.portrait.voiceName == "Samantha")
@@ -79,11 +79,33 @@ struct LaunchOptionsTests {
         try rtf.write(to: url)
         defer { try? FileManager.default.removeItem(at: url) }
 
-        guard case .speak(let text) = LaunchOptions.parse([url.path], isCLI: true).mode else {
+        guard case .speak(let text) = LaunchOptions.parse(["-f", url.path], isCLI: true).mode else {
             Issue.record("expected .speak"); return
         }
         #expect(text.trimmingCharacters(in: .whitespacesAndNewlines) == "Rich text works.")
         #expect(!text.contains("rtf1"))
+    }
+
+    @Test(arguments: [
+        (["Hello", "there"], "Hello there"),
+        (["-v", "female", "Good", "morning!"], "Good morning!"),
+        (["Build", "finished", "-v", "male"], "Build finished"),
+        (["--", "-5", "degrees", "-v"], "-5 degrees -v"),
+        (["-"], "-"),
+    ])
+    func textArguments(arguments: [String], expected: String) {
+        guard case .speak(let text) = LaunchOptions.parse(arguments, isCLI: true).mode else {
+            Issue.record("expected .speak"); return
+        }
+        #expect(text == expected)
+    }
+
+    @Test func fileEqualsForm() throws {
+        let url = try temporaryFile("Equals form.", extension: "txt")
+        guard case .speak(let text) = LaunchOptions.parse(["--file=\(url.path)"], isCLI: true).mode else {
+            Issue.record("expected .speak"); return
+        }
+        #expect(text.trimmingCharacters(in: .whitespacesAndNewlines) == "Equals form.")
     }
 
     private func temporaryFile(_ contents: String, extension ext: String) throws -> URL {
