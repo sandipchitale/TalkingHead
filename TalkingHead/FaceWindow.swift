@@ -21,7 +21,7 @@ struct FaceWindow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            FaceView(mouth: speech.mouth, portrait: speech.portrait)
+            FaceView(mouth: speech.mouth, portrait: speech.portrait, brows: speech.brows)
                 .padding([.horizontal, .top], 12)
                 .overlay {
                     ClickCatcher(toolTip: "Click to show or hide the speech bubble") { bubble.toggle() }

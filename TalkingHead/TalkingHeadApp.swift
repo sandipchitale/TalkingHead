@@ -44,7 +44,7 @@ struct TalkingHeadApp: App {
         .windowBackgroundDragBehavior(.enabled)
 
         Window("Type to Speak", id: InputWindow.id) {
-            InputWindow(initialText: LaunchOptions.defaultText)
+            InputWindow()
                 .environment(speech)
         }
         .defaultSize(width: 520, height: 280)

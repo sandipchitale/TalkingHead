@@ -7,6 +7,9 @@ engine while an animated portrait lip-syncs to it.
 - **Lip sync:** the mouth follows the audio actually playing, using 12 cartoon mouth shapes derived from
   the spelling of each word. Loudness scales how far it opens.
 - **Blinking:** the eyelids blink every few seconds.
+- **Eyebrows:** the eyebrows lift on stressed words (the start of each sentence or clause, long words,
+  words in capitals, and highest at the end of a question or exclamation), and dip slightly on negative or
+  doubtful ones ("not", "never", "but", "sorry"…).
 - **Speech bubble:** a bubble beside the head shows the text, highlights the word being spoken, and
   scrolls to follow it. Click the head to show or hide it.
 - **Controls:** play/pause, type text, or pick a file to speak, from buttons below the head or from the
@@ -189,8 +192,9 @@ JavaScript may have little or no text to read.
 2. Generate `<Name>MouthPatch` (skin with the lips painted out, feathered edges) and `<Name>Eyelids`
    (skin across the eyes) from the image.
 3. Add a `Portrait` entry in `FaceView.swift`. It needs the voice name, the image size, the patch and
-   eyelid rectangles, the eye rectangles, the mouth centre and scale, and a lip colour, all in image
-   pixels. Include it in `Portrait.all`.
+   eyelid rectangles, the eye rectangles, a region for each eyebrow (its left and right edges, the
+   forehead above it, the middle of the brow, and the skin just above the eye) with how far it lifts,
+   the mouth centre and scale, and a lip colour, all in image pixels. Include it in `Portrait.all`.
 
 ## Notes
 

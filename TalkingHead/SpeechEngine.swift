@@ -15,6 +15,9 @@ final class SpeechEngine {
     /// The text of the current utterance.
     private(set) var spokenText = ""
     private(set) var currentWordRange: NSRange?
+    /// How far the eyebrows are raised (1, or higher for "?" and "!") or lowered (negative), 0
+    /// at rest; they go up on stressed words and down a little on negative or doubtful ones.
+    private(set) var brows = 0.0
 
     /// The faces on offer, each with its own voice, sorted by voice name.
     let portraits = Portrait.all.sorted { $0.voiceName < $1.voiceName }
@@ -34,6 +37,11 @@ final class SpeechEngine {
     @ObservationIgnored private var pipeline: AudioPipeline!
     @ObservationIgnored private var generation: UInt64 = 0
     @ObservationIgnored private var ticker: Task<Void, Never>?
+    /// Where the eyebrows are held, until when, and when they may next move, so they don't
+    /// twitch on every other word.
+    @ObservationIgnored private var browHold = 0.0
+    @ObservationIgnored private var browHoldUntil = ContinuousClock.now
+    @ObservationIgnored private var nextBrowMove = ContinuousClock.now
 
     init() {
         pipeline = AudioPipeline { [weak self] generation in
@@ -91,9 +99,8 @@ final class SpeechEngine {
     private func finish() {
         state = .idle
         currentWordRange = nil
-        ticker?.cancel()
-        ticker = nil
-        mouth = .rest
+        // The ticker keeps running until the mouth and brows have settled.
+        if ticker == nil { startTicking() }
     }
 
     /// Polls the pipeline every frame while speaking and morphs the mouth toward what is heard.
@@ -114,16 +121,36 @@ final class SpeechEngine {
         // Louder sounds open the mouth a little wider.
         let target = current.shape.opened(by: 0.6 + 0.5 * Self.loudness(forRMS: snapshot.level))
         let next = mouth.interpolated(to: target, amount: 0.45)
-        if next.distance(to: mouth) > 0.05 {
-            mouth = next
-        } else if state != .speaking {
-            mouth = target
+        let mouthMoving = next.distance(to: mouth) > 0.05
+        mouth = mouthMoving ? next : target
+
+        let now = ContinuousClock.now
+        if state == .speaking, let word = snapshot.wordRange, word != currentWordRange {
+            currentWordRange = word
+            // The end of a question or exclamation always gets its raise, even hard on the
+            // heels of another move.
+            if let hold = Emphasis.brows(for: word, in: spokenText),
+               now >= nextBrowMove || hold >= Emphasis.exclaimedLift {
+                browHold = hold
+                // A frown or a big raise lingers a little longer than a plain raise.
+                browHoldUntil = now + .milliseconds(hold == 1 ? 420 : 550)
+                nextBrowMove = now + .milliseconds(800)
+            }
+        }
+        // Away from rest quickly, back slowly.
+        let browTarget = state == .speaking && now < browHoldUntil ? browHold : 0
+        brows = Self.approach(brows, browTarget, rate: abs(browTarget) > abs(brows) ? 0.25 : 0.08)
+
+        if state != .speaking, !mouthMoving, brows == 0 {
             ticker?.cancel()
             ticker = nil
         }
-        if let word = snapshot.wordRange, word != currentWordRange {
-            currentWordRange = word
-        }
+    }
+
+    /// Moves `value` a fraction of the way to `target`, snapping to it when close.
+    private static func approach(_ value: Double, _ target: Double, rate: Double) -> Double {
+        let next = value + (target - value) * rate
+        return abs(next - target) < 0.005 ? target : next
     }
 
     /// The highest-quality installed voice with this name.

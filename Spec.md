@@ -20,6 +20,13 @@ animated face which will sync with the speech. This should run on MacOS.
 - The shapes follow each word's spelling, timed to when the word is actually voiced.
 - When the mouth is closed, the portrait's own smile shows.
 - The eyes blink every few seconds.
+- The eyebrows lift briefly on stressed words: the first word of each sentence or clause, words in
+  capitals, words of 7 or more letters, and the last word before "?" or "!". They lift at most every
+  0.8 s, so they don't twitch, except that the last word before "?" or "!" always lifts them, and
+  half as high again as other words.
+- They dip slightly (half as far) on negative or doubtful words: "no", "not", "never", words ending in
+  "n't", "but", "however", "sorry", "problem", "wrong" and the like. This wins over a lift, except
+  the higher lift before "?" or "!".
 
 ### Face window
 - A separate, resizable, draggable window showing only the talking head, titled with the voice name.

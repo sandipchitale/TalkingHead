@@ -1,24 +1,28 @@
 import SwiftUI
 
-/// The talking face: a portrait image with an animated mouth and blinking eyelids drawn
-/// over it. While the mouth is closed the portrait's own smile shows; as it opens, a
-/// mouthless skin patch fades in and the animated mouth is drawn on top.
+/// The talking face: a portrait image with an animated mouth, blinking eyelids and moving
+/// eyebrows drawn over it. While the mouth is closed the portrait's own smile shows; as it
+/// opens, a mouthless skin patch fades in and the animated mouth is drawn on top.
 struct FaceView: View {
     var mouth: MouthShape
     var portrait: Portrait = .man
+    /// How far the eyebrows are raised (1, or higher for "?" and "!") or lowered (negative); 0
+    /// at rest.
+    var brows = 0.0
     /// Disable to render a still frame (no blinking).
     var isAnimated = true
     /// Fixes the eyelids at a given openness (0 closed ... 1 open), e.g. for previews.
     var eyeOpenness: Double?
 
     /// Driven by `blink()`; the face is only redrawn while a blink is under way or the
-    /// mouth changes, not every display frame.
+    /// mouth or eyebrows change, not every display frame.
     @State private var blinkOpenness = 1.0
 
     var body: some View {
         let eyeOpen = eyeOpenness ?? blinkOpenness
         let mouth = mouth
         let portrait = portrait
+        let brows = brows
 
         Canvas { context, size in
             let scale = min(size.width / portrait.size.width, size.height / portrait.size.height)
@@ -28,6 +32,7 @@ struct FaceView: View {
             let bounds = CGRect(origin: .zero, size: portrait.size)
             context.clip(to: Path(roundedRect: bounds, cornerRadius: 28 / scale))
             context.draw(portrait.image, in: bounds)
+            portrait.drawBrows(in: &context, lift: brows)
             portrait.drawMouth(in: &context, shape: mouth)
             portrait.drawEyelids(in: &context, openness: eyeOpen)
         }
@@ -67,6 +72,9 @@ struct Portrait: Identifiable {
     let eyelids: Image
     let eyelidsRect: CGRect
     let eyes: [CGRect]
+    let brows: [BrowRegion]
+    /// How many pixels the brows rise at a lift of 1.
+    let browLift: Double
     let mouthCenter: CGPoint
     /// Converts `MouthShape` design units to image pixels.
     let mouthScale: Double
@@ -75,7 +83,8 @@ struct Portrait: Identifiable {
     var id: String { voiceName }
 
     init(voiceName: String, imageName: String, size: CGSize, mouthPatchRect: CGRect, eyelidsRect: CGRect,
-         eyes: [CGRect], mouthCenter: CGPoint, mouthScale: Double, lip: Color) {
+         eyes: [CGRect], brows: [BrowRegion], browLift: Double, mouthCenter: CGPoint, mouthScale: Double,
+         lip: Color) {
         func load(_ name: String) -> Image { Image(nsImage: NSImage(named: name) ?? NSImage()) }
         self.voiceName = voiceName
         self.size = size
@@ -85,6 +94,8 @@ struct Portrait: Identifiable {
         self.mouthPatchRect = mouthPatchRect
         self.eyelidsRect = eyelidsRect
         self.eyes = eyes
+        self.brows = brows
+        self.browLift = browLift
         self.mouthCenter = mouthCenter
         self.mouthScale = mouthScale
         self.lip = lip
@@ -95,6 +106,9 @@ struct Portrait: Identifiable {
         mouthPatchRect: CGRect(x: 146, y: 174, width: 68, height: 24),
         eyelidsRect: CGRect(x: 126, y: 110, width: 114, height: 36),
         eyes: [CGRect(x: 136, y: 120, width: 30, height: 20), CGRect(x: 195, y: 120, width: 32, height: 20)],
+        brows: [BrowRegion(minX: 120, maxX: 172, top: 86, line: 108, bottom: 119),
+                 BrowRegion(minX: 185, maxX: 238, top: 86, line: 108, bottom: 119)],
+        browLift: 3,
         mouthCenter: CGPoint(x: 180, y: 184), mouthScale: 0.78,
         lip: Color(red: 0.72, green: 0.45, blue: 0.40))
 
@@ -103,6 +117,9 @@ struct Portrait: Identifiable {
         mouthPatchRect: CGRect(x: 151, y: 146, width: 62, height: 26),
         eyelidsRect: CGRect(x: 114, y: 86, width: 132, height: 44),
         eyes: [CGRect(x: 125, y: 95, width: 41, height: 27), CGRect(x: 197, y: 95, width: 38, height: 27)],
+        brows: [BrowRegion(minX: 118, maxX: 172, top: 66, line: 86, bottom: 94),
+                 BrowRegion(minX: 188, maxX: 232, top: 66, line: 85, bottom: 94)],
+        browLift: 2.5,
         mouthCenter: CGPoint(x: 182, y: 157), mouthScale: 0.7,
         lip: Color(red: 0.82, green: 0.50, blue: 0.50))
 
@@ -112,6 +129,46 @@ struct Portrait: Identifiable {
     private var tongue: Color { Color(red: 0.86, green: 0.45, blue: 0.44) }
     private var skinShadow: Color { Color(red: 0.55, green: 0.36, blue: 0.28) }
     private var lash: Color { Color(red: 0.23, green: 0.15, blue: 0.11) }
+
+    // MARK: Eyebrows
+
+    /// Moves the eyebrows by redrawing the image over each brow region in narrow columns,
+    /// each stretched vertically so the brow line moves up by `lift` × `browLift` pixels (down
+    /// when `lift` is negative, and less toward the ends of the brow), while the forehead above
+    /// and the eye below stay put.
+    func drawBrows(in context: inout GraphicsContext, lift: Double) {
+        guard abs(lift) > 0.01 else { return }
+        let column = 2.0
+        for brow in brows {
+            var x = brow.minX
+            while x < brow.maxX {
+                let rise = lift * browLift * brow.weight(atX: x + column / 2)
+                if abs(rise) > 0.05 {
+                    let raised = brow.line - rise
+                    // Forehead: top ... line squeezed into (or stretched over) top ... raised.
+                    drawSlice(in: &context, x: x, width: column, from: brow.top, brow.line,
+                              to: brow.top, raised)
+                    // Under the brow: line ... bottom stretched over (or squeezed into) raised ... bottom.
+                    drawSlice(in: &context, x: x, width: column, from: brow.line, brow.bottom,
+                              to: raised, brow.bottom)
+                }
+                x += column
+            }
+        }
+    }
+
+    /// Draws the image's rows `sourceTop ..< sourceBottom` over `top ..< bottom`, within one
+    /// column.
+    private func drawSlice(in context: inout GraphicsContext, x: Double, width: Double,
+                           from sourceTop: Double, _ sourceBottom: Double, to top: Double, _ bottom: Double) {
+        let stretch = (bottom - top) / (sourceBottom - sourceTop)
+        context.drawLayer { layer in
+            // A hair of overlap between columns keeps seams from showing.
+            layer.clip(to: Path(CGRect(x: x - 0.25, y: top, width: width + 0.5, height: bottom - top)))
+            layer.draw(image, in: CGRect(x: 0, y: top - sourceTop * stretch,
+                                         width: size.width, height: size.height * stretch))
+        }
+    }
 
     // MARK: Mouth
 
@@ -240,6 +297,18 @@ struct Portrait: Identifiable {
                 FaceView(mouth: viseme.shape, isAnimated: false)
                     .frame(width: 150, height: 220)
                 Text(viseme.rawValue).font(.caption)
+            }
+        }
+    }
+    .padding()
+}
+
+#Preview("Eyebrows") {
+    HStack {
+        ForEach(Portrait.all) { portrait in
+            ForEach([-0.5, 0.0, 1.0, Emphasis.exclaimedLift], id: \.self) { lift in
+                FaceView(mouth: .rest, portrait: portrait, brows: lift, isAnimated: false)
+                    .frame(width: 200, height: 200)
             }
         }
     }

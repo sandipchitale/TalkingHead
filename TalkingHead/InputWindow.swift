@@ -7,12 +7,9 @@ struct InputWindow: View {
 
     @Environment(SpeechEngine.self) private var speech
     @Environment(\.openWindow) private var openWindow
-    @State private var text: String
+    /// Starts as the current voice's greeting (see `LaunchOptions.defaultText`).
+    @State private var text = ""
     @State private var window: NSWindow?
-
-    init(initialText: String) {
-        _text = State(initialValue: initialText)
-    }
 
     var body: some View {
         VStack(spacing: 12) {
@@ -39,6 +36,15 @@ struct InputWindow: View {
             self.window = window
             bringToFront(window)
         })
+        .onAppear {
+            if text.isEmpty { text = LaunchOptions.defaultText(voiceName: speech.portrait.voiceName) }
+        }
+        // Portrait IDs are voice names. An untouched greeting follows the voice.
+        .onChange(of: speech.portraitID) { old, new in
+            if text == LaunchOptions.defaultText(voiceName: old) {
+                text = LaunchOptions.defaultText(voiceName: new)
+            }
+        }
     }
 
     /// Speaks the text, opening the talking head if it isn't showing, and keeps the keyboard

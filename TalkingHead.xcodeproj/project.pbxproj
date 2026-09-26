@@ -10,6 +10,7 @@
 		02F6763F0DE31F7EE1500324 /* TextFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036A2825A7A10C92174940A3 /* TextFile.swift */; };
 		27995DEB793F0C1ADA976812 /* LaunchOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DDE6F103AA1A0863EBBCDE /* LaunchOptions.swift */; };
 		283C7931367C3EAB3C50EDF6 /* ExternalRequests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5923217C408164FF5FAF0771 /* ExternalRequests.swift */; };
+		2E7455850731E01EE3175553 /* Expression.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC00127C1D31CDF3A65460AD /* Expression.swift */; };
 		4087A43877BCC528BB4353CF /* AudioPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2BD0989CAC81FE03842813B /* AudioPipeline.swift */; };
 		457F5CC4C6010C6284A82223 /* SpeechEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 517FA019FCFDD641E4154634 /* SpeechEngine.swift */; };
 		586CD27F801D4FAE483C11D8 /* FaceWindowSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B01B6ABF39DDC16FBAF13EC /* FaceWindowSettings.swift */; };
@@ -70,6 +71,7 @@
 		7D4D7E298D16DAE29A7609EE /* WebPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebPage.swift; sourceTree = "<group>"; };
 		95F3F7EFE55C244B60ECC91C /* TalkingHeadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TalkingHeadApp.swift; sourceTree = "<group>"; };
 		A75A69EBBB9F40916503A9C2 /* InputWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputWindow.swift; sourceTree = "<group>"; };
+		DC00127C1D31CDF3A65460AD /* Expression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expression.swift; sourceTree = "<group>"; };
 		E2BD0989CAC81FE03842813B /* AudioPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPipeline.swift; sourceTree = "<group>"; };
 		E38B3474E7AF89A21A7E44D8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -90,6 +92,7 @@
 			children = (
 				E38B3474E7AF89A21A7E44D8 /* Assets.xcassets */,
 				E2BD0989CAC81FE03842813B /* AudioPipeline.swift */,
+				DC00127C1D31CDF3A65460AD /* Expression.swift */,
 				5923217C408164FF5FAF0771 /* ExternalRequests.swift */,
 				1D0D88DA2C1C4406B3FC9F77 /* FaceView.swift */,
 				441B996248F6D9A32B0F41A2 /* FaceWindow.swift */,
@@ -256,6 +259,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4087A43877BCC528BB4353CF /* AudioPipeline.swift in Sources */,
+				2E7455850731E01EE3175553 /* Expression.swift in Sources */,
 				283C7931367C3EAB3C50EDF6 /* ExternalRequests.swift in Sources */,
 				CC26C42A8653F8E3CFF2A794 /* FaceView.swift in Sources */,
 				B107E64913EA5A43B1C5A42D /* FaceWindow.swift in Sources */,

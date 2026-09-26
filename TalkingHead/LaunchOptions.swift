@@ -59,8 +59,10 @@ struct LaunchOptions {
           --                 treat everything after this as text, even if it starts with -
         """
 
-    /// Starting text for the typing window.
-    static let defaultText = "Hello! I am a talking head. Type something here, press Speak, and I will read it aloud for you."
+    /// Starting text for the typing window, introducing the voice by name.
+    static func defaultText(voiceName: String) -> String {
+        "Hello! I am \(voiceName). How are you? Excellent day!!"
+    }
 
     /// The options for this process. `th` passes its arguments NUL-separated and base64
     /// encoded as `-THArguments <value>`, which AppKit exposes as a (temporary) user default.

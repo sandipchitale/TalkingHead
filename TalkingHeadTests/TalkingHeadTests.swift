@@ -206,3 +206,71 @@ struct URLOptionTests {
         #expect(LaunchOptions.parse(["--url=https://example.com"], isCLI: true).speaksAndQuits)
     }
 }
+
+struct EmphasisTests {
+    private func raises(_ word: String, in text: String) -> Bool {
+        Emphasis.raisesBrows((text as NSString).range(of: word, options: .backwards), in: text)
+    }
+
+    @Test func firstWordIsStressed() {
+        #expect(raises("Hello", in: "Hello there, friend."))
+        #expect(raises("Hello", in: "\"Hello there.\""))
+    }
+
+    @Test func ordinaryWordsAreNot() {
+        #expect(!raises("there", in: "Hello there, friend."))
+        #expect(!raises("left", in: "Then I left."))
+    }
+
+    @Test func sentencesAndClausesStartStressed() {
+        #expect(raises("friend", in: "Hello there, friend."))
+        #expect(raises("Then", in: "It rained. Then I left."))
+        #expect(raises("Then", in: "It rained. \"Then I left.\""))
+    }
+
+    @Test func questionsExclamationsCapitalsAndLongWords() {
+        #expect(raises("ready", in: "Are you ready?"))
+        #expect(raises("wow", in: "That was, wow!"))
+        #expect(raises("NOW", in: "Do it NOW."))
+        #expect(raises("amazing", in: "It is amazing here."))
+    }
+
+    @Test func singleCapitalLetterIsNotShouting() {
+        #expect(!raises("I", in: "Then I left."))
+    }
+
+    private func brows(_ word: String, in text: String) -> Double? {
+        Emphasis.brows(for: (text as NSString).range(of: word, options: .backwards), in: text)
+    }
+
+    @Test func negativeWordsLowerTheBrows() {
+        #expect(brows("not", in: "That is not right.")! < 0)
+        #expect(brows("don't", in: "I don't know.")! < 0)
+        #expect(brows("can’t", in: "We can’t.")! < 0)
+        // Lowering wins over the raise a sentence start or capitals would give.
+        #expect(brows("But", in: "It works. But slowly.")! < 0)
+        #expect(brows("NOT", in: "Do NOT touch.")! < 0)
+    }
+
+    @Test func questionsAndExclamationsRaiseHigher() {
+        #expect(brows("ready", in: "Are you ready?") == Emphasis.exclaimedLift)
+        #expect(brows("wow", in: "That was, wow!") == Emphasis.exclaimedLift)
+        #expect(brows("not", in: "Why not?") == Emphasis.exclaimedLift)
+        #expect(brows("Hello", in: "Hello there.") == 1)
+    }
+
+    @Test func browsRiseOrStayPut() {
+        #expect(brows("Hello", in: "Hello there.") == 1)
+        #expect(brows("there", in: "Hello there.") == nil)
+    }
+}
+
+struct BrowRegionTests {
+    @Test func browWeightFadesAtTheEnds() {
+        let brow = BrowRegion(minX: 100, maxX: 200, top: 0, line: 10, bottom: 20)
+        #expect(brow.weight(atX: 100) == 0)
+        #expect(brow.weight(atX: 200) == 0)
+        #expect(brow.weight(atX: 150) == 1)
+        #expect(brow.weight(atX: 110) > 0 && brow.weight(atX: 110) < 1)
+    }
+}
