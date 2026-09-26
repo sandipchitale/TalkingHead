@@ -5,7 +5,7 @@ import Foundation
 /// The `th` script inside the app bundle runs the app executable with the user's arguments
 /// packed into a `-THArguments` value (see `current()`):
 ///
-///     th [-v|--voice male|female] [-t|--tty] [-f|--file path] [-u|--url URL] [--always-on-top] [text ...]
+///     th [-v|--voice male|female] [-m|--mood MOOD] [-t|--tty] [-f|--file path] [-u|--url URL] [--always-on-top] [text ...]
 ///
 /// The text comes from the non-option arguments, the `--file`, the page at `--url`, the
 /// terminal with `--tty`, or standard input when that is piped or redirected. Otherwise just the talking head is shown. Launched from Finder (no `-THArguments`), the app starts quietly in the menu bar.
@@ -39,17 +39,23 @@ struct LaunchOptions {
 
     var mode: Mode
     var portrait: Portrait
+    /// The mood to show while speaking (`--mood`); otherwise the text suggests one.
+    var mood: Mood?
     /// Keep the talking head above other windows (`--always-on-top`).
     var alwaysOnTop = false
 
     static let usage = """
-        usage: th [-v|--voice male|female] [-t|--tty] [-f|--file path] [-u|--url URL] [--always-on-top] [text ...]
+        usage: th [-v|--voice male|female] [-m|--mood MOOD] [-t|--tty] [-f|--file path] [-u|--url URL] [--always-on-top] [text ...]
 
         Speaks text with an animated talking head, then quits. The text is the arguments,
         the file, the web page, what you type at the terminal (--tty), or piped standard
         input. With none of these, just shows the talking head.
 
           -v, --voice VOICE  male (Daniel, the default) or female (Samantha)
+          -m, --mood MOOD    the face's mood while speaking:
+                             \(Mood.names)
+                             Without it, the text suggests one (emoji like 😊, words
+                             like "sorry"). [mood] cues in the text change it part-way.
           -f, --file PATH    speak this file (plain text, RTF, HTML, Word…; - for stdin)
           -u, --url URL      speak this web page, or only its highlighted text if the URL
                              has a text fragment (#:~:text=…)
@@ -82,6 +88,7 @@ struct LaunchOptions {
     /// they ask for help or are invalid.
     static func parse(_ arguments: [String], isCLI: Bool) -> LaunchOptions {
         var portrait = Portrait.man
+        var mood: Mood?
         var path: String?
         var readsTerminal = false
         var alwaysOnTop = false
@@ -106,6 +113,11 @@ struct LaunchOptions {
                 portrait = voice(named: name)
             case _ where argument.hasPrefix("--voice="):
                 portrait = voice(named: String(argument.dropFirst("--voice=".count)))
+            case "-m", "--mood":
+                guard let name = remaining.popFirst() else { fail("\(argument) needs a mood: \(Mood.names)") }
+                mood = self.mood(named: name)
+            case _ where argument.hasPrefix("--mood="):
+                mood = self.mood(named: String(argument.dropFirst("--mood=".count)))
             case "-f", "--file":
                 guard let value = remaining.popFirst() else { fail("\(argument) needs a file path") }
                 guard path == nil else { fail("only one file can be given") }
@@ -128,10 +140,10 @@ struct LaunchOptions {
         guard sources <= 1 else { fail("give text arguments, --file, --url or --tty, not more than one") }
 
         if !isCLI {
-            return LaunchOptions(mode: .menuBar, portrait: portrait, alwaysOnTop: alwaysOnTop)
+            return LaunchOptions(mode: .menuBar, portrait: portrait, mood: mood, alwaysOnTop: alwaysOnTop)
         }
         if let webURL {
-            return LaunchOptions(mode: .speakURL(webURL), portrait: portrait, alwaysOnTop: alwaysOnTop)
+            return LaunchOptions(mode: .speakURL(webURL), portrait: portrait, mood: mood, alwaysOnTop: alwaysOnTop)
         }
         let text: String
         if !words.isEmpty {
@@ -141,10 +153,15 @@ struct LaunchOptions {
         } else if readsTerminal || isatty(STDIN_FILENO) == 0 {
             text = readStandardInput()
         } else {
-            return LaunchOptions(mode: .face, portrait: portrait, alwaysOnTop: alwaysOnTop)
+            return LaunchOptions(mode: .face, portrait: portrait, mood: mood, alwaysOnTop: alwaysOnTop)
         }
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { fail("no text to speak") }
-        return LaunchOptions(mode: .speak(text), portrait: portrait, alwaysOnTop: alwaysOnTop)
+        return LaunchOptions(mode: .speak(text), portrait: portrait, mood: mood, alwaysOnTop: alwaysOnTop)
+    }
+
+    private static func mood(named name: String) -> Mood {
+        guard let mood = Mood(name: name) else { fail("unknown mood \(name); use \(Mood.names)") }
+        return mood
     }
 
     /// `male` selects Daniel (the man); `female` selects Samantha (the woman).

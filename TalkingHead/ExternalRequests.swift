@@ -3,7 +3,7 @@ import AppKit
 /// Speaks text sent from other apps: the "Speak with Talking Head" service (select text, or a
 /// link, in Mail, Safari, …) and `talkinghead://` URLs:
 ///
-///     talkinghead://speak?text=Hello%20there&voice=female
+///     talkinghead://speak?text=Hello%20there&voice=female&mood=happy
 ///     talkinghead://speak?url=https%3A%2F%2Fexample.com%2F%23%3A~%3Atext%3DExample
 final class ExternalRequests: NSObject {
     /// Set up by the app at launch, before any service or URL request can arrive.
@@ -51,7 +51,8 @@ final class ExternalRequests: NSObject {
         open(url)
     }
 
-    /// Handles `talkinghead://speak?text=…` or `?url=…`, with an optional `voice=male|female`.
+    /// Handles `talkinghead://speak?text=…` or `?url=…`, with optional `voice=male|female` and
+    /// `mood=` (see `Mood`).
     func open(_ url: URL) {
         guard let request = Request(url: url) else {
             showError("Talking Head can't open \(url.absoluteString).")
@@ -61,8 +62,8 @@ final class ExternalRequests: NSObject {
             speech.portraitID = portrait
         }
         switch request.source {
-        case .text(let text): speak(text: text)
-        case .url(let url): speak(url: url)
+        case .text(let text): speak(text: text, mood: request.mood)
+        case .url(let url): speak(url: url, mood: request.mood)
         }
     }
 
@@ -75,6 +76,8 @@ final class ExternalRequests: NSObject {
 
         var source: Source
         var portrait: Portrait.ID?
+        /// Unknown moods are ignored, so an old link keeps working.
+        var mood: Mood?
 
         init?(url: URL) {
             guard url.scheme?.lowercased() == "talkinghead",
@@ -96,22 +99,23 @@ final class ExternalRequests: NSObject {
             case "female": portrait = "Samantha"
             default: portrait = nil
             }
+            mood = value("mood").flatMap(Mood.init(name:))
         }
 
     }
 
     // MARK: Speaking
 
-    private func speak(text: String) {
-        speech.speak(text)
+    private func speak(text: String, mood: Mood? = nil) {
+        speech.speak(text, mood: mood)
         speech.requestFace()
     }
 
-    private func speak(url: URL) {
+    private func speak(url: URL, mood: Mood? = nil) {
         speech.requestFace()
         Task {
             do {
-                speech.speak(try await WebPage.speakableText(for: url))
+                speech.speak(try await WebPage.speakableText(for: url), mood: mood)
             } catch {
                 showError("Couldn't read \(url.absoluteString): \(error.localizedDescription)")
             }

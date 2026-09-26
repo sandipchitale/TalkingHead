@@ -52,6 +52,7 @@ nonisolated final class AudioPipeline: NSObject, AVSpeechSynthesizerDelegate, @u
         var words: [WordTiming] = []
         var engineStarted = false
         var renderingFinished = false
+        var pitch = PitchTracker()
 
         /// Narrows `start..<end` to the part that is actually voiced, trimming leading and
         /// trailing silence (e.g. the pause after a comma).
@@ -79,8 +80,18 @@ nonisolated final class AudioPipeline: NSObject, AVSpeechSynthesizerDelegate, @u
             return Snapshot(level: level, wordRange: word.range, viseme: word.viseme(at: progress))
         }
 
+        /// How the word at `range` stands out in pitch from the speech so far.
+        func prosody(of range: NSRange) -> WordProsody? {
+            guard let index = words.firstIndex(where: { $0.range == range }) else { return nil }
+            let end = index + 1 < words.count ? words[index + 1].frame : framesRendered
+            let windows = Int(words[index].frame / AudioPipeline.windowFrames)..<Int(end / AudioPipeline.windowFrames)
+            return WordProsody.measure(word: windows, pitches: pitch.pitches)
+        }
+
+        /// Records the loudness envelope and the pitch of `buffer`.
         mutating func appendEnvelope(of buffer: AVAudioPCMBuffer) {
             let count = Int(buffer.frameLength)
+            pitch.sampleRate = buffer.format.sampleRate
             for i in 0..<count {
                 let sample: Float
                 if let floats = buffer.floatChannelData {
@@ -90,6 +101,7 @@ nonisolated final class AudioPipeline: NSObject, AVSpeechSynthesizerDelegate, @u
                 } else {
                     sample = 0
                 }
+                pitch.append(sample)
                 windowSum += sample * sample
                 windowCount += 1
                 if windowCount == AudioPipeline.windowFrames {
@@ -166,6 +178,12 @@ nonisolated final class AudioPipeline: NSObject, AVSpeechSynthesizerDelegate, @u
         guard frame >= 0 else { return Snapshot(level: 0, wordRange: nil, viseme: .rest) }
 
         return timeline.withLock { $0.snapshot(at: frame) }
+    }
+
+    /// How the word at `range` in the current text stands out in pitch, once its
+    /// audio has been rendered.
+    func prosody(ofWordAt range: NSRange) -> WordProsody? {
+        timeline.withLock { $0.prosody(of: range) }
     }
 
     private func receive(_ buffer: AVAudioBuffer, generation: UInt64) {

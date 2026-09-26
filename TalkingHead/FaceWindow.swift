@@ -21,7 +21,8 @@ struct FaceWindow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            FaceView(mouth: speech.mouth, portrait: speech.portrait, brows: speech.brows)
+            FaceView(mouth: speech.mouth, portrait: speech.portrait, brows: speech.brows,
+                     expression: speech.expression)
                 .padding([.horizontal, .top], 12)
                 .overlay {
                     ClickCatcher(toolTip: "Click to show or hide the speech bubble") { bubble.toggle() }
@@ -41,10 +42,10 @@ struct FaceWindow: View {
         .task {
             switch options.mode {
             case .speak(let text):
-                speech.speak(text)
+                speech.speak(text, mood: options.mood)
             case .speakURL(let url):
                 do {
-                    speech.speak(try await WebPage.speakableText(for: url))
+                    speech.speak(try await WebPage.speakableText(for: url), mood: options.mood)
                 } catch {
                     FileHandle.standardError.write(Data("th: can't read \(url.absoluteString): \(error.localizedDescription)\n".utf8))
                     exit(2)

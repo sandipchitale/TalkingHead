@@ -15,8 +15,10 @@
 		457F5CC4C6010C6284A82223 /* SpeechEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 517FA019FCFDD641E4154634 /* SpeechEngine.swift */; };
 		586CD27F801D4FAE483C11D8 /* FaceWindowSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B01B6ABF39DDC16FBAF13EC /* FaceWindowSettings.swift */; };
 		696D1B52C2CB8A71C17783AA /* InputWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A75A69EBBB9F40916503A9C2 /* InputWindow.swift */; };
+		74E401CC7A727C6963DD90D2 /* Mood.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1062330AF862223DE617366A /* Mood.swift */; };
 		76A3F3066363F3ACA9CF45BB /* TalkingHeadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F3F7EFE55C244B60ECC91C /* TalkingHeadApp.swift */; };
 		7C9621CEF720B893884C946E /* Viseme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A7655C79DFE8D4210E2FD8C /* Viseme.swift */; };
+		86053F5EC0B74DC828E08E4C /* Prosody.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F168A23527B1A39B7A6D4B /* Prosody.swift */; };
 		A4BBE15DE75CBC9C38DA107E /* TalkingHeadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B2696B0C29356F17731412A /* TalkingHeadTests.swift */; };
 		AAE46F534502C5FC339159EB /* th in CopyFiles */ = {isa = PBXBuildFile; fileRef = 09C1929CC2D386392F17190B /* th */; };
 		B107E64913EA5A43B1C5A42D /* FaceWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441B996248F6D9A32B0F41A2 /* FaceWindow.swift */; };
@@ -56,6 +58,7 @@
 		09C1929CC2D386392F17190B /* th */ = {isa = PBXFileReference; path = th; sourceTree = "<group>"; };
 		0B2696B0C29356F17731412A /* TalkingHeadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TalkingHeadTests.swift; sourceTree = "<group>"; };
 		0E7D48BA07B3A81B1C5285DD /* TalkingHeadTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TalkingHeadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1062330AF862223DE617366A /* Mood.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mood.swift; sourceTree = "<group>"; };
 		125190569898D818A70DBA13 /* TextFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFragment.swift; sourceTree = "<group>"; };
 		1B01B6ABF39DDC16FBAF13EC /* FaceWindowSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceWindowSettings.swift; sourceTree = "<group>"; };
 		1D0D88DA2C1C4406B3FC9F77 /* FaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceView.swift; sourceTree = "<group>"; };
@@ -70,6 +73,7 @@
 		67DDE6F103AA1A0863EBBCDE /* LaunchOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchOptions.swift; sourceTree = "<group>"; };
 		7D4D7E298D16DAE29A7609EE /* WebPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebPage.swift; sourceTree = "<group>"; };
 		95F3F7EFE55C244B60ECC91C /* TalkingHeadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TalkingHeadApp.swift; sourceTree = "<group>"; };
+		99F168A23527B1A39B7A6D4B /* Prosody.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prosody.swift; sourceTree = "<group>"; };
 		A75A69EBBB9F40916503A9C2 /* InputWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputWindow.swift; sourceTree = "<group>"; };
 		DC00127C1D31CDF3A65460AD /* Expression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expression.swift; sourceTree = "<group>"; };
 		E2BD0989CAC81FE03842813B /* AudioPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPipeline.swift; sourceTree = "<group>"; };
@@ -100,6 +104,8 @@
 				62F4B0A2B8748E4FB9304B20 /* Info.plist */,
 				A75A69EBBB9F40916503A9C2 /* InputWindow.swift */,
 				67DDE6F103AA1A0863EBBCDE /* LaunchOptions.swift */,
+				1062330AF862223DE617366A /* Mood.swift */,
+				99F168A23527B1A39B7A6D4B /* Prosody.swift */,
 				64AF3A24653856415DEBFF16 /* SpeechBubble.swift */,
 				517FA019FCFDD641E4154634 /* SpeechEngine.swift */,
 				23A8F9FF61CE9D1287CD0904 /* SpokenTextView.swift */,
@@ -266,6 +272,8 @@
 				586CD27F801D4FAE483C11D8 /* FaceWindowSettings.swift in Sources */,
 				696D1B52C2CB8A71C17783AA /* InputWindow.swift in Sources */,
 				27995DEB793F0C1ADA976812 /* LaunchOptions.swift in Sources */,
+				74E401CC7A727C6963DD90D2 /* Mood.swift in Sources */,
+				86053F5EC0B74DC828E08E4C /* Prosody.swift in Sources */,
 				B625FBCF305A0D47250571DC /* SpeechBubble.swift in Sources */,
 				457F5CC4C6010C6284A82223 /* SpeechEngine.swift in Sources */,
 				C7B8E401E07998D97E7DDCCB /* SpokenTextView.swift in Sources */,

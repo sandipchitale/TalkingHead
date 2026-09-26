@@ -7,9 +7,16 @@ engine while an animated portrait lip-syncs to it.
 - **Lip sync:** the mouth follows the audio actually playing, using 12 cartoon mouth shapes derived from
   the spelling of each word. Loudness scales how far it opens.
 - **Blinking:** the eyelids blink every few seconds.
-- **Eyebrows:** the eyebrows lift on stressed words (the start of each sentence or clause, long words,
-  words in capitals, and highest at the end of a question or exclamation), and dip slightly on negative or
-  doubtful ones ("not", "never", "but", "sorry"…).
+- **Eyebrows:** the eyebrows lift on the words the voice stresses (found from its pitch), on words in
+  capitals, and highest at the end of a question or exclamation. They dip slightly on negative or
+  doubtful words ("not", "never", "but", "sorry"…).
+- **Moods:** the face can look happy, sad, surprised, concerned or angry, through its eyebrows and a
+  closed mouth that turns down. With no hint, the text suggests the mood: emoji and emoticons (😊,
+  😟, `:(`…) and feeling words ("congratulations", "unfortunately", "warning"…) set it for their
+  sentence, and are not read out. Any caller can also say which mood to show:
+  - `th --mood concerned "Build failed"`, or `mood=` in a `talkinghead://` link, for all of the text;
+  - `[mood]` cues in the text, such as `[happy] Good news! [sad] But I'm leaving.`, from that point on.
+    `[neutral]` ends one. Cues also work in the typing window and with the Services menu.
 - **Speech bubble:** a bubble beside the head shows the text, highlights the word being spoken, and
   scrolls to follow it. Click the head to show or hide it.
 - **Controls:** play/pause, type text, or pick a file to speak, from buttons below the head or from the
@@ -98,7 +105,7 @@ Its menu offers:
 ## Command line: `th`
 
 ```
-th [-v|--voice male|female] [-t|--tty] [-f|--file path] [-u|--url URL] [--always-on-top] [text ...]
+th [-v|--voice male|female] [-m|--mood MOOD] [-t|--tty] [-f|--file path] [-u|--url URL] [--always-on-top] [text ...]
 ```
 
 | Invocation | Result |
@@ -109,6 +116,7 @@ th [-v|--voice male|female] [-t|--tty] [-f|--file path] [-u|--url URL] [--always
 | `th -t` | Reads text typed at the terminal (end with Control-D), speaks it, then quits |
 | `th` at a terminal | Shows the talking head only; use its toolbar to type text or pick a file |
 | `th -v female …` | Uses Samantha instead of Daniel (the default, `male`) |
+| `th --mood concerned "Build failed"` | Shows a mood: `neutral`, `happy`, `sad`, `surprised`, `concerned` or `angry` |
 | `th --always-on-top …` | Keeps the talking head above other windows for this run |
 | `th -- -5 degrees` | `--` ends the options, so text can start with `-` |
 | `th -u 'https://example.com/#:~:text=This%20domain'` | Speaks the web page, or just the passage its text fragment highlights |
@@ -135,6 +143,7 @@ it a keyboard shortcut.
 | `talkinghead://speak?text=Hello%20there` | Speaks the text |
 | `talkinghead://speak?url=<percent-encoded URL>` | Speaks the page, or its highlighted passage |
 | add `&voice=female` or `&voice=male` | Picks the voice (when nothing is playing) |
+| add `&mood=happy` (or another mood) | Shows that mood; an unknown mood is ignored |
 
 For example, from Terminal: `open "talkinghead://speak?text=Build%20finished&voice=female"`.
 
@@ -155,9 +164,20 @@ JavaScript may have little or no text to read.
   "friend" → F, R, EE, N. The shapes share the time the word is actually voiced, vowels are held
   longer, and silence shows a resting mouth. The shape is parametric (width, lips, teeth, tongue,
   roundness), so it morphs smoothly between visemes.
+- **Stress:** as the speech is rendered, the app estimates its pitch every 256 frames
+  (autocorrelation over 1024 samples). A word counts as stressed when its pitch rises above the
+  speaker's median by a good share of that speaker's usual rise, so a lively voice (Daniel) and a
+  flatter one (Samantha) move their eyebrows about as often. The audio is rendered ahead of playback,
+  so each word's pitch is known before it is heard.
+- **Eyebrows:** the brows are moved without extra artwork: narrow columns of the image over each brow
+  are redrawn stretched, squeezing the forehead and stretching the skin above the eye (or the
+  reverse). A tilt moves the inner ends more than the outer ones.
+- **Moods:** `Script` takes the cues and mood emoji out of the text and works out the mood at each
+  point: a `[mood]` cue, else the mood given for the whole text, else its sentence's guess. The face
+  eases from one mood to the next.
 - **Portraits:** each portrait is an image plus two textures generated from it: a mouthless skin patch
   that fades in when the mouth opens, and skin for the eyelids. The portrait's own smile shows when
-  the mouth is closed.
+  the mouth is closed, unless a mood turns the mouth down.
 - **`th`:** `th` is a shell script inside the app bundle (`Contents/MacOS/th`). It runs the app
   executable with the arguments packed into one `-THArguments` value, because AppKit would treat
   bare arguments such as file names as documents to open.
@@ -169,7 +189,10 @@ JavaScript may have little or no text to read.
 | `TalkingHead/TalkingHeadApp.swift` | App entry: menu bar item, windows, login item |
 | `TalkingHead/LaunchOptions.swift` | Command-line parsing (`th` arguments) |
 | `TalkingHead/SpeechEngine.swift` | Observable speech state, mouth shape, current word |
-| `TalkingHead/AudioPipeline.swift` | Synthesis to buffers, playback, loudness and word timeline |
+| `TalkingHead/AudioPipeline.swift` | Synthesis to buffers, playback, loudness, pitch and word timeline |
+| `TalkingHead/Prosody.swift` | Pitch tracking, and how much the voice stresses each word |
+| `TalkingHead/Mood.swift` | Moods, how the face shows them, and `Script`: cues, emoji and guessed moods |
+| `TalkingHead/Expression.swift` | When the eyebrows move, and where each portrait's brows are |
 | `TalkingHead/Viseme.swift` | Spelling → mouth shapes, parametric `MouthShape` |
 | `TalkingHead/FaceView.swift` | Portrait rendering: animated mouth and eyelids; `Portrait` data |
 | `TalkingHead/FaceWindow.swift` | Face window and its toolbar |

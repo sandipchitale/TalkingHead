@@ -6,9 +6,11 @@ import SwiftUI
 struct FaceView: View {
     var mouth: MouthShape
     var portrait: Portrait = .man
-    /// How far the eyebrows are raised (1, or higher for "?" and "!") or lowered (negative); 0
-    /// at rest.
+    /// How far the eyebrows are raised (1, or higher for "?" and "!") or lowered (negative) by
+    /// stressed words; 0 at rest.
     var brows = 0.0
+    /// The mood being shown (see `Mood`).
+    var expression = FaceExpression.neutral
     /// Disable to render a still frame (no blinking).
     var isAnimated = true
     /// Fixes the eyelids at a given openness (0 closed ... 1 open), e.g. for previews.
@@ -23,6 +25,7 @@ struct FaceView: View {
         let mouth = mouth
         let portrait = portrait
         let brows = brows
+        let expression = expression
 
         Canvas { context, size in
             let scale = min(size.width / portrait.size.width, size.height / portrait.size.height)
@@ -32,8 +35,8 @@ struct FaceView: View {
             let bounds = CGRect(origin: .zero, size: portrait.size)
             context.clip(to: Path(roundedRect: bounds, cornerRadius: 28 / scale))
             context.draw(portrait.image, in: bounds)
-            portrait.drawBrows(in: &context, lift: brows)
-            portrait.drawMouth(in: &context, shape: mouth)
+            portrait.drawBrows(in: &context, lift: expression.brows + brows, tilt: expression.tilt)
+            portrait.drawMouth(in: &context, shape: mouth, frown: expression.frown)
             portrait.drawEyelids(in: &context, openness: eyeOpen)
         }
         .aspectRatio(portrait.size, contentMode: .fit)
@@ -135,14 +138,18 @@ struct Portrait: Identifiable {
     /// Moves the eyebrows by redrawing the image over each brow region in narrow columns,
     /// each stretched vertically so the brow line moves up by `lift` × `browLift` pixels (down
     /// when `lift` is negative, and less toward the ends of the brow), while the forehead above
-    /// and the eye below stay put.
-    func drawBrows(in context: inout GraphicsContext, lift: Double) {
-        guard abs(lift) > 0.01 else { return }
+    /// and the eye below stay put. `tilt` also raises (or, negative, lowers) the inner ends by
+    /// up to `tilt` × `browLift` pixels.
+    func drawBrows(in context: inout GraphicsContext, lift: Double, tilt: Double = 0) {
+        guard abs(lift) > 0.01 || abs(tilt) > 0.01 else { return }
+        let lift = min(1.6, max(-1, lift))
         let column = 2.0
         for brow in brows {
             var x = brow.minX
             while x < brow.maxX {
-                let rise = lift * browLift * brow.weight(atX: x + column / 2)
+                let middle = x + column / 2
+                let rise = browLift * (lift * brow.weight(atX: middle)
+                    + tilt * brow.tiltWeight(atX: middle, centerX: mouthCenter.x))
                 if abs(rise) > 0.05 {
                     let raised = brow.line - rise
                     // Forehead: top ... line squeezed into (or stretched over) top ... raised.
@@ -163,8 +170,9 @@ struct Portrait: Identifiable {
                            from sourceTop: Double, _ sourceBottom: Double, to top: Double, _ bottom: Double) {
         let stretch = (bottom - top) / (sourceBottom - sourceTop)
         context.drawLayer { layer in
-            // A hair of overlap between columns keeps seams from showing.
-            layer.clip(to: Path(CGRect(x: x - 0.25, y: top, width: width + 0.5, height: bottom - top)))
+            // A hair of overlap with the neighbouring columns and slices keeps seams from showing
+            // (a half-covered pixel would let the unmoved image show through).
+            layer.clip(to: Path(CGRect(x: x - 0.25, y: top - 0.5, width: width + 0.5, height: bottom - top + 1)))
             layer.draw(image, in: CGRect(x: 0, y: top - sourceTop * stretch,
                                          width: size.width, height: size.height * stretch))
         }
@@ -172,10 +180,13 @@ struct Portrait: Identifiable {
 
     // MARK: Mouth
 
-    func drawMouth(in context: inout GraphicsContext, shape: MouthShape) {
+    /// Draws the mouth. `frown` (0 ... 1) turns the corners down and, since the portrait's own
+    /// mouth smiles, covers it even when the mouth is closed.
+    func drawMouth(in context: inout GraphicsContext, shape: MouthShape, frown: Double = 0) {
         // Fade the animated mouth in as it opens, so a closed mouth shows the portrait's smile.
-        let fade = min(1, (shape.top + shape.bottom) / 6)
+        let fade = min(1, max((shape.top + shape.bottom) / 6, frown * 4))
         guard fade > 0.01 else { return }
+        let droop = 5 * frown
 
         context.drawLayer { layer in
             layer.opacity = fade
@@ -190,8 +201,8 @@ struct Portrait: Identifiable {
             // Two cubic curves between the corners; roundness pushes the control points out
             // toward the corners, turning a pointed grin into an oval.
             let reach = w * (0.45 + 0.55 * shape.roundness)
-            let left = CGPoint(x: center.x - w, y: center.y)
-            let right = CGPoint(x: center.x + w, y: center.y)
+            let left = CGPoint(x: center.x - w, y: center.y + droop)
+            let right = CGPoint(x: center.x + w, y: center.y + droop)
             var mouth = Path()
             mouth.move(to: left)
             mouth.addCurve(to: right,
@@ -235,7 +246,27 @@ struct Portrait: Identifiable {
                 inside.addFilter(.blur(radius: 2.5))
                 inside.stroke(mouth, with: .color(.black.opacity(0.45)), lineWidth: 5)
             }
-            layer.stroke(mouth, with: .color(lip), style: StrokeStyle(lineWidth: 1.4, lineJoin: .round))
+            // A closed mouth is only a line: lips pressed together, with a dark crease between.
+            let closed = max(0, 1 - (shape.top + shape.bottom) / 3)
+            if closed > 0.01 {
+                // Upper and lower lips as one lens along the mouth line, fuller below.
+                var lips = Path()
+                lips.move(to: left)
+                lips.addCurve(to: right,
+                              control1: CGPoint(x: center.x - reach, y: center.y - shape.top * 1.33 - 8),
+                              control2: CGPoint(x: center.x + reach, y: center.y - shape.top * 1.33 - 8))
+                lips.addCurve(to: left,
+                              control1: CGPoint(x: center.x + reach, y: center.y + shape.bottom * 1.33 + 11),
+                              control2: CGPoint(x: center.x - reach, y: center.y + shape.bottom * 1.33 + 11))
+                lips.closeSubpath()
+                layer.drawLayer { soft in
+                    soft.addFilter(.blur(radius: 0.7))
+                    soft.fill(lips, with: .color(lip.opacity(closed)))
+                }
+                layer.stroke(mouth, with: .color(mouthInside.opacity(0.6 * closed)),
+                             style: StrokeStyle(lineWidth: 1.1, lineCap: .round, lineJoin: .round))
+            }
+            layer.stroke(mouth, with: .color(lip.opacity(1 - closed)), style: StrokeStyle(lineWidth: 1.4, lineJoin: .round))
         }
     }
 

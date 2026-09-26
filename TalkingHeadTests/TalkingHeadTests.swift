@@ -274,3 +274,114 @@ struct BrowRegionTests {
         #expect(brow.weight(atX: 110) > 0 && brow.weight(atX: 110) < 1)
     }
 }
+
+struct ScriptTests {
+    private func moodOf(_ word: String, in script: Script) -> Mood {
+        script.mood(at: (script.text as NSString).range(of: word).location)
+    }
+
+    @Test func cuesAreRemovedAndApplyUntilTheNext() {
+        let script = Script.parse("[happy] Hello there. [sad] I have to go. [neutral] Bye.")
+        #expect(script.text == "Hello there. I have to go. Bye.")
+        #expect(moodOf("Hello", in: script) == .happy)
+        #expect(moodOf("go", in: script) == .sad)
+        #expect(moodOf("Bye", in: script) == .neutral)
+    }
+
+    @Test func unknownBracketsAreLeftAlone() {
+        #expect(Script.parse("See note [1] and [HAPPY] too").text == "See note [1] and too")
+    }
+
+    @Test func emojiSetTheirSentencesMood() {
+        let script = Script.parse("Well done! 😊 The build broke 😟 again.")
+        #expect(script.text == "Well done! The build broke again.")
+        #expect(moodOf("done", in: script) == .happy)
+        #expect(moodOf("broke", in: script) == .concerned)
+    }
+
+    @Test func emoticonsCountButNotInsideWords() {
+        let script = Script.parse("That is sad :( really.")
+        #expect(script.text == "That is sad really.")
+        #expect(moodOf("sad", in: script) == .sad)
+        #expect(Script.parse("See https://example.com today").text == "See https://example.com today")
+    }
+
+    @Test func feelingWordsSuggestAMood() {
+        let script = Script.parse("Congratulations on the release. The tests ran. Unfortunately, the deploy failed.")
+        #expect(moodOf("release", in: script) == .happy)
+        #expect(moodOf("ran", in: script) == .neutral)
+        // "unfortunately" (sad) and "failed" (concerned) tie; the first wins.
+        #expect(moodOf("deploy", in: script) == .sad)
+    }
+
+    @Test func aGivenMoodOverridesGuessesButNotCues() {
+        let script = Script.parse("Great news. [surprised] Really?", mood: .concerned)
+        #expect(moodOf("Great", in: script) == .concerned)
+        #expect(moodOf("Really", in: script) == .surprised)
+    }
+
+    @Test func offsetsAreUTF16() {
+        // "é" is one UTF-16 unit, "🚀" (not a mood emoji, so kept) is two.
+        let script = Script.parse("Café 🚀 [angry] Stop.")
+        #expect(moodOf("Stop", in: script) == .angry)
+        #expect(moodOf("Café", in: script) == .neutral)
+    }
+}
+
+struct MoodOptionTests {
+    @Test func moodOption() {
+        #expect(LaunchOptions.parse(["--mood", "happy", "Hi"], isCLI: true).mood == .happy)
+        #expect(LaunchOptions.parse(["-m", "SAD", "Hi"], isCLI: true).mood == .sad)
+        #expect(LaunchOptions.parse(["--mood=angry", "Hi"], isCLI: true).mood == .angry)
+        #expect(LaunchOptions.parse(["Hi"], isCLI: true).mood == nil)
+    }
+
+    @Test func moodInLinks() throws {
+        let url = try #require(URL(string: "talkinghead://speak?text=Hi&mood=surprised"))
+        #expect(ExternalRequests.Request(url: url)?.mood == .surprised)
+        let unknown = try #require(URL(string: "talkinghead://speak?text=Hi&mood=sleepy"))
+        #expect(ExternalRequests.Request(url: unknown)?.mood == nil)
+    }
+}
+
+struct ProsodyTests {
+    /// A buzzy (harmonic-rich) tone, like a voice.
+    private func tone(_ frequency: Double, sampleRate: Double = 22_050, count: Int = 1024) -> [Float] {
+        (0..<count).map { i in
+            let t = Double(i) / sampleRate
+            return Float(0.3 * sin(2 * .pi * frequency * t) + 0.15 * sin(4 * .pi * frequency * t)
+                         + 0.1 * sin(6 * .pi * frequency * t))
+        }
+    }
+
+    @Test(arguments: [110.0, 175.0, 240.0])
+    func findsThePitch(of frequency: Double) {
+        let found = Double(PitchTracker.fundamental(of: tone(frequency), sampleRate: 22_050))
+        #expect(abs(found - frequency) / frequency < 0.03)
+    }
+
+    @Test func silenceIsUnvoiced() {
+        #expect(PitchTracker.fundamental(of: [Float](repeating: 0, count: 1024), sampleRate: 22_050) == 0)
+    }
+
+    @Test func aWordAboveTheUsualPitchIsAccented() {
+        // 200 windows around 120 Hz, then a word at 150 Hz (about 4 semitones up).
+        let pitches = (0..<200).map { Float($0 % 2 == 0 ? 115 : 125) } + [Float](repeating: 150, count: 8)
+        let high = WordProsody.measure(word: 200..<208, pitches: pitches)
+        let usual = WordProsody.measure(word: 0..<8, pitches: pitches)
+        #expect(high!.accent > 0.5)
+        #expect(usual!.accent == 0)
+    }
+
+    @Test func pitchAccentDrivesOrdinaryRaises() {
+        let text = "The build finished today."
+        let build = (text as NSString).range(of: "build")
+        let today = (text as NSString).range(of: "today")
+        #expect(Emphasis.brows(for: build, in: text, accent: 0.8)! > 0)
+        #expect(Emphasis.brows(for: build, in: text, accent: 0) == nil)
+        // A sentence start raises without pitch data, but not when the voice doesn't stress it.
+        #expect(Emphasis.brows(for: NSRange(location: 0, length: 3), in: text) == 1)
+        #expect(Emphasis.brows(for: NSRange(location: 0, length: 3), in: text, accent: 0) == nil)
+        #expect(Emphasis.brows(for: today, in: text, accent: 0.1) == nil)
+    }
+}

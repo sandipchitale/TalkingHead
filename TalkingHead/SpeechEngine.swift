@@ -12,12 +12,14 @@ final class SpeechEngine {
     private(set) var state: SpeechState = .idle
     /// Current mouth, morphing smoothly toward the viseme being heard.
     private(set) var mouth = MouthShape.rest
-    /// The text of the current utterance.
+    /// The text of the current utterance, without mood cues and mood emoji.
     private(set) var spokenText = ""
     private(set) var currentWordRange: NSRange?
     /// How far the eyebrows are raised (1, or higher for "?" and "!") or lowered (negative), 0
     /// at rest; they go up on stressed words and down a little on negative or doubtful ones.
     private(set) var brows = 0.0
+    /// The mood being shown, easing from one to the next (see `Mood`).
+    private(set) var expression = FaceExpression.neutral
 
     /// The faces on offer, each with its own voice, sorted by voice name.
     let portraits = Portrait.all.sorted { $0.voiceName < $1.voiceName }
@@ -42,6 +44,11 @@ final class SpeechEngine {
     @ObservationIgnored private var browHold = 0.0
     @ObservationIgnored private var browHoldUntil = ContinuousClock.now
     @ObservationIgnored private var nextBrowMove = ContinuousClock.now
+    /// The text being spoken with its moods, and the mood for the words being heard.
+    @ObservationIgnored private var script = Script(text: "")
+    @ObservationIgnored private var mood = Mood.neutral
+    /// What was last asked for, to replay: the text as given, cues and all, and its mood.
+    @ObservationIgnored private var lastRequest: (text: String, mood: Mood?) = ("", nil)
 
     init() {
         pipeline = AudioPipeline { [weak self] generation in
@@ -49,12 +56,18 @@ final class SpeechEngine {
         }
     }
 
-    func speak(_ text: String) {
-        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-        spokenText = text
+    /// Speaks `text`, showing `mood` throughout unless the text's own `[mood]` cues say
+    /// otherwise; with no mood, the text's emoji and feeling words suggest one (see `Script`).
+    func speak(_ text: String, mood: Mood? = nil) {
+        let script = Script.parse(text.trimmingCharacters(in: .whitespacesAndNewlines), mood: mood)
+        let spoken = script.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !spoken.isEmpty else { return }
+        lastRequest = (text, mood)
+        self.script = script
+        self.mood = script.mood(at: 0)
+        spokenText = script.text
         currentWordRange = nil
-        generation = pipeline.speak(text, voice: Self.bestVoice(named: portrait.voiceName), rate: rate)
+        generation = pipeline.speak(script.text, voice: Self.bestVoice(named: portrait.voiceName), rate: rate)
         state = .speaking
         startTicking()
     }
@@ -87,7 +100,7 @@ final class SpeechEngine {
         switch state {
         case .speaking: pause()
         case .paused: resume()
-        case .idle: speak(spokenText)
+        case .idle: speak(lastRequest.text, mood: lastRequest.mood)
         }
     }
 
@@ -127,21 +140,27 @@ final class SpeechEngine {
         let now = ContinuousClock.now
         if state == .speaking, let word = snapshot.wordRange, word != currentWordRange {
             currentWordRange = word
+            mood = script.mood(at: word.location)
+            // The voice's own stress on the word, once its audio has been rendered.
+            let accent = pipeline.prosody(ofWordAt: word)?.accent
             // The end of a question or exclamation always gets its raise, even hard on the
             // heels of another move.
-            if let hold = Emphasis.brows(for: word, in: spokenText),
+            if let hold = Emphasis.brows(for: word, in: spokenText, accent: accent),
                now >= nextBrowMove || hold >= Emphasis.exclaimedLift {
                 browHold = hold
                 // A frown or a big raise lingers a little longer than a plain raise.
-                browHoldUntil = now + .milliseconds(hold == 1 ? 420 : 550)
+                browHoldUntil = now + .milliseconds(hold > 0 && hold < Emphasis.exclaimedLift ? 420 : 550)
                 nextBrowMove = now + .milliseconds(800)
             }
         }
         // Away from rest quickly, back slowly.
         let browTarget = state == .speaking && now < browHoldUntil ? browHold : 0
         brows = Self.approach(brows, browTarget, rate: abs(browTarget) > abs(brows) ? 0.25 : 0.08)
+        // The mood holds through a pause and fades once the speech is over.
+        let expressionTarget = state == .idle ? FaceExpression.neutral : mood.face
+        expression = expression.approaching(expressionTarget, rate: 0.06)
 
-        if state != .speaking, !mouthMoving, brows == 0 {
+        if state != .speaking, !mouthMoving, brows == 0, expression == expressionTarget {
             ticker?.cancel()
             ticker = nil
         }

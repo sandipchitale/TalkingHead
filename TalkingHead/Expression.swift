@@ -13,13 +13,22 @@ nonisolated struct BrowRegion: Sendable {
     /// Just above the eye, which stays put.
     var bottom: Double
 
-    /// How much of the lift applies at `x`: 0 at the edges, 1 across the middle.
-    func weight(atX x: Double) -> Double {
+    /// How much of the lift applies at `x`: 0 at the edges, 1 across the middle. `taper` is the
+    /// fraction of the width at each end over which it fades.
+    func weight(atX x: Double, taper: Double = 0.3) -> Double {
         let u = (x - minX) / (maxX - minX)
         guard u > 0, u < 1 else { return 0 }
-        let edge = min(u, 1 - u) / 0.3
+        let edge = min(u, 1 - u) / taper
         guard edge < 1 else { return 1 }
         return edge * edge * (3 - 2 * edge)
+    }
+
+    /// How much of a tilt applies at `x`: nothing at the outer end, rising to 1 near the inner
+    /// end (the one nearer `centerX`, the middle of the face).
+    func tiltWeight(atX x: Double, centerX: Double) -> Double {
+        let u = (x - minX) / (maxX - minX)
+        let inner = (minX + maxX) / 2 < centerX ? u : 1 - u
+        return max(0, inner) * weight(atX: x, taper: 0.1)
     }
 }
 
@@ -28,16 +37,31 @@ nonisolated enum Emphasis {
     /// How high the eyebrows go at the end of a question or exclamation.
     static let exclaimedLift = 1.5
 
-    /// Where the eyebrows go for the word at `range` in `text`: 1 raises them, a negative value
-    /// lowers them a little, and nil leaves them be. The last word before "?" or "!" raises
-    /// them higher (`exclaimedLift`); otherwise negative or doubtful words ("not", "never",
-    /// "but", "sorry"…) lower them, and other stressed words raise them (see `raisesBrows`).
-    static func brows(for range: NSRange, in text: String) -> Double? {
+    /// Where the eyebrows go for the word at `range` in `text`: positive raises them, negative
+    /// lowers them a little, and nil leaves them be.
+    ///
+    /// The last word before "?" or "!" raises them highest (`exclaimedLift`). Otherwise
+    /// negative or doubtful words ("not", "never", "but", "sorry"…) lower them, and words in
+    /// capitals raise them. Other words raise them when the voice stresses them: `accent`
+    /// (0 ... 1) is how much the word's pitch rises (see `WordProsody`). When that isn't known,
+    /// the stress is guessed from the text instead (see `raisesBrows`).
+    static func brows(for range: NSRange, in text: String, accent: Double? = nil) -> Double? {
         let nsText = text as NSString
         guard range.location != NSNotFound, NSMaxRange(range) <= nsText.length else { return nil }
         if endsQuestionOrExclamation(range, in: nsText) { return exclaimedLift }
-        if lowersBrows(nsText.substring(with: range)) { return -0.5 }
+        let word = nsText.substring(with: range)
+        if lowersBrows(word) { return -0.5 }
+        if isShouted(word) { return 1 }
+        if let accent {
+            return accent >= 0.2 ? 0.6 + 0.4 * accent : nil
+        }
         return raisesBrows(range, in: text) ? 1 : nil
+    }
+
+    /// Whether `word` is in capitals, like "NOT" (a single capital, like "I", doesn't count).
+    private static func isShouted(_ word: String) -> Bool {
+        let letters = word.filter(\.isLetter)
+        return letters.count >= 2 && letters.allSatisfy(\.isUppercase)
     }
 
     /// Whether the word at `range` is the last before "?" or "!".
@@ -74,7 +98,7 @@ nonisolated enum Emphasis {
         if before == nil || ".!?,;:—".contains(before!) {
             return true
         }
-        if letters.count >= 2, letters.allSatisfy(\.isUppercase) {
+        if isShouted(word) {
             return true
         }
         if letters.count >= 7 {
