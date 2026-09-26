@@ -10,17 +10,42 @@ settings:
     SWIFT_APPROACHABLE_CONCURRENCY: YES
     MARKETING_VERSION: "0.0.5"
     CURRENT_PROJECT_VERSION: "1"
+packages:
+  # The same MCP SDK (and version) as VoiceChat.
+  MCP:
+    url: https://github.com/modelcontextprotocol/swift-sdk.git
+    exactVersion: 0.12.1
+  # Already a dependency of the MCP SDK; named here for the menu bar app's HTTP server.
+  NIO:
+    url: https://github.com/apple/swift-nio.git
+    from: 2.65.0
 targets:
   TalkingHead:
     type: application
     platform: macOS
     sources:
       - path: TalkingHead
+      # The MCP tools, shared with `th-mcp`.
+      - path: MCPTools
       # The `th` command-line script, copied next to the app executable (Contents/MacOS).
       - path: CLI/th
         buildPhase:
           copyFiles:
             destination: executables
+    dependencies:
+      - package: MCP
+      - package: NIO
+        product: NIOCore
+      - package: NIO
+        product: NIOPosix
+      - package: NIO
+        product: NIOHTTP1
+      # The stdio MCP server, copied next to the app executable (Contents/MacOS) and signed.
+      - target: th-mcp
+        embed: true
+        codeSign: true
+        copy:
+          destination: executables
     scheme:
       testTargets: [TalkingHeadTests]
     info:
@@ -63,6 +88,23 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: "-"
+  # The stdio MCP server. It speaks by running the `th` beside it.
+  th-mcp:
+    type: tool
+    platform: macOS
+    sources:
+      - path: CLI/th-mcp
+      - path: MCPTools
+    dependencies:
+      - package: MCP
+    settings:
+      base:
+        PRODUCT_NAME: th-mcp
+        PRODUCT_BUNDLE_IDENTIFIER: com.sandipchitale.TalkingHead.th-mcp
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "-"
+        SKIP_INSTALL: YES
   TalkingHeadTests:
     type: bundle.unit-test
     platform: macOS

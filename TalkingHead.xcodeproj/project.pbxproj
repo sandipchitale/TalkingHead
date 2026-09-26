@@ -8,26 +8,44 @@
 
 /* Begin PBXBuildFile section */
 		02F6763F0DE31F7EE1500324 /* TextFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036A2825A7A10C92174940A3 /* TextFile.swift */; };
+		068FBC7C3BF264D306ACB1FF /* MCPHTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BB97926F51A1DA314704CFC /* MCPHTTPServer.swift */; };
+		1EFB51AAE3687FDBF2728199 /* MCPToolsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B18564DEA80A65A49B6239F /* MCPToolsTests.swift */; };
+		2534FAD9DF566CE1C9A89A0E /* AppSpeaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752CB40309FF4118C96A01EF /* AppSpeaker.swift */; };
 		27995DEB793F0C1ADA976812 /* LaunchOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DDE6F103AA1A0863EBBCDE /* LaunchOptions.swift */; };
 		283C7931367C3EAB3C50EDF6 /* ExternalRequests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5923217C408164FF5FAF0771 /* ExternalRequests.swift */; };
+		2AFDCD3FCB23F21A373BD98F /* THProcessSpeaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5E3F61CE8DFD7802C4D87A /* THProcessSpeaker.swift */; };
 		2E7455850731E01EE3175553 /* Expression.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC00127C1D31CDF3A65460AD /* Expression.swift */; };
+		386FE03A41FF17E1539877A5 /* MCPConfigWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A3B5DBE4876544B73783718 /* MCPConfigWindow.swift */; };
 		4087A43877BCC528BB4353CF /* AudioPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2BD0989CAC81FE03842813B /* AudioPipeline.swift */; };
+		4201F9D3AFCC4B1F9306AB4C /* NIOPosix in Frameworks */ = {isa = PBXBuildFile; productRef = 08DEBFAAE2DA034FDC77F470 /* NIOPosix */; };
+		428AEF42827CA9F6E7C60CCA /* MCPServerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD5EE2246C526CDA7B785D6 /* MCPServerController.swift */; };
+		4564FEBC7BC74AC9CCA2CD80 /* Speaking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35724361BFDF41A1B3F0A6EF /* Speaking.swift */; };
 		457F5CC4C6010C6284A82223 /* SpeechEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 517FA019FCFDD641E4154634 /* SpeechEngine.swift */; };
+		5222BB2BAE99568CFD743EBF /* THProcessSpeaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5E3F61CE8DFD7802C4D87A /* THProcessSpeaker.swift */; };
+		5495783A612861A03B135895 /* TalkingHeadTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DFAF15E39C638DDC5E1E646 /* TalkingHeadTools.swift */; };
 		586CD27F801D4FAE483C11D8 /* FaceWindowSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B01B6ABF39DDC16FBAF13EC /* FaceWindowSettings.swift */; };
+		694A9830DD6D5CB5B855B23F /* NIOHTTP1 in Frameworks */ = {isa = PBXBuildFile; productRef = 58C07149C5E48F33B01CEA2F /* NIOHTTP1 */; };
 		696D1B52C2CB8A71C17783AA /* InputWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A75A69EBBB9F40916503A9C2 /* InputWindow.swift */; };
+		6B18BB2953D09CECBB1CF6C1 /* NIOCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4FD1A9785FFB812C4DC7090F /* NIOCore */; };
+		7373FA9E9C0B9611CB72140F /* TalkingHeadTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DFAF15E39C638DDC5E1E646 /* TalkingHeadTools.swift */; };
 		74E401CC7A727C6963DD90D2 /* Mood.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1062330AF862223DE617366A /* Mood.swift */; };
 		76A3F3066363F3ACA9CF45BB /* TalkingHeadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F3F7EFE55C244B60ECC91C /* TalkingHeadApp.swift */; };
 		7C9621CEF720B893884C946E /* Viseme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A7655C79DFE8D4210E2FD8C /* Viseme.swift */; };
 		86053F5EC0B74DC828E08E4C /* Prosody.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F168A23527B1A39B7A6D4B /* Prosody.swift */; };
+		88382C935D90F5D61DCA17E5 /* th-mcp in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = 9263A95063BEF7EC34A50328 /* th-mcp */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A4BBE15DE75CBC9C38DA107E /* TalkingHeadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B2696B0C29356F17731412A /* TalkingHeadTests.swift */; };
 		AAE46F534502C5FC339159EB /* th in CopyFiles */ = {isa = PBXBuildFile; fileRef = 09C1929CC2D386392F17190B /* th */; };
 		B107E64913EA5A43B1C5A42D /* FaceWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441B996248F6D9A32B0F41A2 /* FaceWindow.swift */; };
 		B625FBCF305A0D47250571DC /* SpeechBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AF3A24653856415DEBFF16 /* SpeechBubble.swift */; };
 		B6BDA1464BC1FEF240CB077C /* WebPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4D7E298D16DAE29A7609EE /* WebPage.swift */; };
+		C750D9DAD97CFDABA987FD0F /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CB10B07C9E62347E7EF793A /* main.swift */; };
 		C7B8E401E07998D97E7DDCCB /* SpokenTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23A8F9FF61CE9D1287CD0904 /* SpokenTextView.swift */; };
 		CB5654CC42015A26E662E7BC /* TextFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 125190569898D818A70DBA13 /* TextFragment.swift */; };
 		CC26C42A8653F8E3CFF2A794 /* FaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0D88DA2C1C4406B3FC9F77 /* FaceView.swift */; };
+		CF01192DA5DADA247C0ECB1B /* Speaking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35724361BFDF41A1B3F0A6EF /* Speaking.swift */; };
+		D409352ED0A3D281D0E3EBF8 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 2341697C39A620626D520B21 /* MCP */; };
 		D4E723FAD514E8FB12548C18 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E38B3474E7AF89A21A7E44D8 /* Assets.xcassets */; };
+		DDC924284972F934BF9016F5 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 7FD8AF518C7DD1422D1FC87C /* MCP */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -38,9 +56,27 @@
 			remoteGlobalIDString = 605B4DB1A8E9C30E70D060E4;
 			remoteInfo = TalkingHead;
 		};
+		AF7D80C47C14B2ACEF7375C6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EF0C483B7C3DE652498A33D5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1D58FE5708F19BB7EBF70E71;
+			remoteInfo = "th-mcp";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		1DAA0B98A00D004AB8C8AA4A /* Embed Dependencies */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+				88382C935D90F5D61DCA17E5 /* th-mcp in Embed Dependencies */,
+			);
+			name = "Embed Dependencies";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B41FEE93E25198AF24D9EBA2 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -57,43 +93,88 @@
 		036A2825A7A10C92174940A3 /* TextFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFile.swift; sourceTree = "<group>"; };
 		09C1929CC2D386392F17190B /* th */ = {isa = PBXFileReference; path = th; sourceTree = "<group>"; };
 		0B2696B0C29356F17731412A /* TalkingHeadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TalkingHeadTests.swift; sourceTree = "<group>"; };
+		0BB97926F51A1DA314704CFC /* MCPHTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPHTTPServer.swift; sourceTree = "<group>"; };
 		0E7D48BA07B3A81B1C5285DD /* TalkingHeadTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TalkingHeadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1062330AF862223DE617366A /* Mood.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mood.swift; sourceTree = "<group>"; };
 		125190569898D818A70DBA13 /* TextFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFragment.swift; sourceTree = "<group>"; };
 		1B01B6ABF39DDC16FBAF13EC /* FaceWindowSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceWindowSettings.swift; sourceTree = "<group>"; };
+		1CB10B07C9E62347E7EF793A /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		1D0D88DA2C1C4406B3FC9F77 /* FaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceView.swift; sourceTree = "<group>"; };
 		23A8F9FF61CE9D1287CD0904 /* SpokenTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpokenTextView.swift; sourceTree = "<group>"; };
+		35724361BFDF41A1B3F0A6EF /* Speaking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Speaking.swift; sourceTree = "<group>"; };
+		3DFAF15E39C638DDC5E1E646 /* TalkingHeadTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TalkingHeadTools.swift; sourceTree = "<group>"; };
 		441B996248F6D9A32B0F41A2 /* FaceWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceWindow.swift; sourceTree = "<group>"; };
 		498639349FA6205F0E7E5AD5 /* TalkingHead.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TalkingHead.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4B18564DEA80A65A49B6239F /* MCPToolsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPToolsTests.swift; sourceTree = "<group>"; };
 		517FA019FCFDD641E4154634 /* SpeechEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechEngine.swift; sourceTree = "<group>"; };
 		5923217C408164FF5FAF0771 /* ExternalRequests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalRequests.swift; sourceTree = "<group>"; };
 		5A7655C79DFE8D4210E2FD8C /* Viseme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Viseme.swift; sourceTree = "<group>"; };
+		5BD5EE2246C526CDA7B785D6 /* MCPServerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPServerController.swift; sourceTree = "<group>"; };
 		62F4B0A2B8748E4FB9304B20 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		64AF3A24653856415DEBFF16 /* SpeechBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechBubble.swift; sourceTree = "<group>"; };
 		67DDE6F103AA1A0863EBBCDE /* LaunchOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchOptions.swift; sourceTree = "<group>"; };
+		752CB40309FF4118C96A01EF /* AppSpeaker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSpeaker.swift; sourceTree = "<group>"; };
+		7A3B5DBE4876544B73783718 /* MCPConfigWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPConfigWindow.swift; sourceTree = "<group>"; };
 		7D4D7E298D16DAE29A7609EE /* WebPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebPage.swift; sourceTree = "<group>"; };
+		9263A95063BEF7EC34A50328 /* th-mcp */ = {isa = PBXFileReference; includeInIndex = 0; path = "th-mcp"; sourceTree = BUILT_PRODUCTS_DIR; };
 		95F3F7EFE55C244B60ECC91C /* TalkingHeadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TalkingHeadApp.swift; sourceTree = "<group>"; };
 		99F168A23527B1A39B7A6D4B /* Prosody.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prosody.swift; sourceTree = "<group>"; };
 		A75A69EBBB9F40916503A9C2 /* InputWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputWindow.swift; sourceTree = "<group>"; };
 		DC00127C1D31CDF3A65460AD /* Expression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expression.swift; sourceTree = "<group>"; };
 		E2BD0989CAC81FE03842813B /* AudioPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPipeline.swift; sourceTree = "<group>"; };
 		E38B3474E7AF89A21A7E44D8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		ED5E3F61CE8DFD7802C4D87A /* THProcessSpeaker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = THProcessSpeaker.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		512B0B1248727AC05AFB81A7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D409352ED0A3D281D0E3EBF8 /* MCP in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CC02F0808F2F4D5AFDF17866 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DDC924284972F934BF9016F5 /* MCP in Frameworks */,
+				6B18BB2953D09CECBB1CF6C1 /* NIOCore in Frameworks */,
+				4201F9D3AFCC4B1F9306AB4C /* NIOPosix in Frameworks */,
+				694A9830DD6D5CB5B855B23F /* NIOHTTP1 in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		931E6F56D2F28E10A38BD2ED = {
 			isa = PBXGroup;
 			children = (
 				F7EE01C78BABA6B037421AD4 /* CLI */,
+				93CA6182EC55FD9B2B079778 /* MCPTools */,
 				9DA8A7EE099ED1AF6241C8E4 /* TalkingHead */,
 				CD12A2A1FAABEF3943F5A004 /* TalkingHeadTests */,
+				C3DDEF669DE621EE9FA532B9 /* th-mcp */,
 				F6BBD8F8EDC86840DC9DC42B /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		93CA6182EC55FD9B2B079778 /* MCPTools */ = {
+			isa = PBXGroup;
+			children = (
+				35724361BFDF41A1B3F0A6EF /* Speaking.swift */,
+				3DFAF15E39C638DDC5E1E646 /* TalkingHeadTools.swift */,
+				ED5E3F61CE8DFD7802C4D87A /* THProcessSpeaker.swift */,
+			);
+			path = MCPTools;
 			sourceTree = "<group>";
 		};
 		9DA8A7EE099ED1AF6241C8E4 /* TalkingHead */ = {
 			isa = PBXGroup;
 			children = (
+				752CB40309FF4118C96A01EF /* AppSpeaker.swift */,
 				E38B3474E7AF89A21A7E44D8 /* Assets.xcassets */,
 				E2BD0989CAC81FE03842813B /* AudioPipeline.swift */,
 				DC00127C1D31CDF3A65460AD /* Expression.swift */,
@@ -104,6 +185,9 @@
 				62F4B0A2B8748E4FB9304B20 /* Info.plist */,
 				A75A69EBBB9F40916503A9C2 /* InputWindow.swift */,
 				67DDE6F103AA1A0863EBBCDE /* LaunchOptions.swift */,
+				7A3B5DBE4876544B73783718 /* MCPConfigWindow.swift */,
+				0BB97926F51A1DA314704CFC /* MCPHTTPServer.swift */,
+				5BD5EE2246C526CDA7B785D6 /* MCPServerController.swift */,
 				1062330AF862223DE617366A /* Mood.swift */,
 				99F168A23527B1A39B7A6D4B /* Prosody.swift */,
 				64AF3A24653856415DEBFF16 /* SpeechBubble.swift */,
@@ -118,9 +202,19 @@
 			path = TalkingHead;
 			sourceTree = "<group>";
 		};
+		C3DDEF669DE621EE9FA532B9 /* th-mcp */ = {
+			isa = PBXGroup;
+			children = (
+				1CB10B07C9E62347E7EF793A /* main.swift */,
+			);
+			name = "th-mcp";
+			path = "CLI/th-mcp";
+			sourceTree = "<group>";
+		};
 		CD12A2A1FAABEF3943F5A004 /* TalkingHeadTests */ = {
 			isa = PBXGroup;
 			children = (
+				4B18564DEA80A65A49B6239F /* MCPToolsTests.swift */,
 				0B2696B0C29356F17731412A /* TalkingHeadTests.swift */,
 			);
 			path = TalkingHeadTests;
@@ -131,6 +225,7 @@
 			children = (
 				498639349FA6205F0E7E5AD5 /* TalkingHead.app */,
 				0E7D48BA07B3A81B1C5285DD /* TalkingHeadTests.xctest */,
+				9263A95063BEF7EC34A50328 /* th-mcp */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -146,6 +241,25 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		1D58FE5708F19BB7EBF70E71 /* th-mcp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5C344C8283ECAEFA7B76A474 /* Build configuration list for PBXNativeTarget "th-mcp" */;
+			buildPhases = (
+				33BDA61C8370B30DB1732B5F /* Sources */,
+				512B0B1248727AC05AFB81A7 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "th-mcp";
+			packageProductDependencies = (
+				2341697C39A620626D520B21 /* MCP */,
+			);
+			productName = "th-mcp";
+			productReference = 9263A95063BEF7EC34A50328 /* th-mcp */;
+			productType = "com.apple.product-type.tool";
+		};
 		3AC6F9E160BD3A5AD9C29625 /* TalkingHeadTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = DD63C64E745B12FDD4C041C1 /* Build configuration list for PBXNativeTarget "TalkingHeadTests" */;
@@ -171,14 +285,21 @@
 				93F94F7660D8961D25316136 /* Sources */,
 				889B80F5D5E4437DEE6A08AF /* Resources */,
 				B41FEE93E25198AF24D9EBA2 /* CopyFiles */,
+				CC02F0808F2F4D5AFDF17866 /* Frameworks */,
+				1DAA0B98A00D004AB8C8AA4A /* Embed Dependencies */,
 				B67B683C003618E7ED630555 /* Sign th */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				0220A1122D07F23864CF55A5 /* PBXTargetDependency */,
 			);
 			name = TalkingHead;
 			packageProductDependencies = (
+				7FD8AF518C7DD1422D1FC87C /* MCP */,
+				4FD1A9785FFB812C4DC7090F /* NIOCore */,
+				08DEBFAAE2DA034FDC77F470 /* NIOPosix */,
+				58C07149C5E48F33B01CEA2F /* NIOHTTP1 */,
 			);
 			productName = TalkingHead;
 			productReference = 498639349FA6205F0E7E5AD5 /* TalkingHead.app */;
@@ -193,6 +314,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					1D58FE5708F19BB7EBF70E71 = {
+						ProvisioningStyle = Automatic;
+					};
 					605B4DB1A8E9C30E70D060E4 = {
 						ProvisioningStyle = Automatic;
 					};
@@ -207,12 +331,17 @@
 			);
 			mainGroup = 931E6F56D2F28E10A38BD2ED;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				ABCE62A1895F7AAAB4023A10 /* XCRemoteSwiftPackageReference "swift-sdk" */,
+				0916D54CCAC5A1DA69AC2A2C /* XCRemoteSwiftPackageReference "swift-nio" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F6BBD8F8EDC86840DC9DC42B /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				605B4DB1A8E9C30E70D060E4 /* TalkingHead */,
+				1D58FE5708F19BB7EBF70E71 /* th-mcp */,
 				3AC6F9E160BD3A5AD9C29625 /* TalkingHeadTests */,
 			);
 		};
@@ -256,7 +385,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1EFB51AAE3687FDBF2728199 /* MCPToolsTests.swift in Sources */,
 				A4BBE15DE75CBC9C38DA107E /* TalkingHeadTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		33BDA61C8370B30DB1732B5F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4564FEBC7BC74AC9CCA2CD80 /* Speaking.swift in Sources */,
+				5222BB2BAE99568CFD743EBF /* THProcessSpeaker.swift in Sources */,
+				7373FA9E9C0B9611CB72140F /* TalkingHeadTools.swift in Sources */,
+				C750D9DAD97CFDABA987FD0F /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -264,6 +405,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2534FAD9DF566CE1C9A89A0E /* AppSpeaker.swift in Sources */,
 				4087A43877BCC528BB4353CF /* AudioPipeline.swift in Sources */,
 				2E7455850731E01EE3175553 /* Expression.swift in Sources */,
 				283C7931367C3EAB3C50EDF6 /* ExternalRequests.swift in Sources */,
@@ -272,12 +414,18 @@
 				586CD27F801D4FAE483C11D8 /* FaceWindowSettings.swift in Sources */,
 				696D1B52C2CB8A71C17783AA /* InputWindow.swift in Sources */,
 				27995DEB793F0C1ADA976812 /* LaunchOptions.swift in Sources */,
+				386FE03A41FF17E1539877A5 /* MCPConfigWindow.swift in Sources */,
+				068FBC7C3BF264D306ACB1FF /* MCPHTTPServer.swift in Sources */,
+				428AEF42827CA9F6E7C60CCA /* MCPServerController.swift in Sources */,
 				74E401CC7A727C6963DD90D2 /* Mood.swift in Sources */,
 				86053F5EC0B74DC828E08E4C /* Prosody.swift in Sources */,
+				CF01192DA5DADA247C0ECB1B /* Speaking.swift in Sources */,
 				B625FBCF305A0D47250571DC /* SpeechBubble.swift in Sources */,
 				457F5CC4C6010C6284A82223 /* SpeechEngine.swift in Sources */,
 				C7B8E401E07998D97E7DDCCB /* SpokenTextView.swift in Sources */,
+				2AFDCD3FCB23F21A373BD98F /* THProcessSpeaker.swift in Sources */,
 				76A3F3066363F3ACA9CF45BB /* TalkingHeadApp.swift in Sources */,
+				5495783A612861A03B135895 /* TalkingHeadTools.swift in Sources */,
 				02F6763F0DE31F7EE1500324 /* TextFile.swift in Sources */,
 				CB5654CC42015A26E662E7BC /* TextFragment.swift in Sources */,
 				7C9621CEF720B893884C946E /* Viseme.swift in Sources */,
@@ -288,6 +436,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		0220A1122D07F23864CF55A5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1D58FE5708F19BB7EBF70E71 /* th-mcp */;
+			targetProxy = AF7D80C47C14B2ACEF7375C6 /* PBXContainerItemProxy */;
+		};
 		C3305E8A5225EFF88738F4DD /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 605B4DB1A8E9C30E70D060E4 /* TalkingHead */;
@@ -395,6 +548,42 @@
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		7594CBB1F341B014913F579D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.sandipchitale.TalkingHead.th-mcp";
+				PRODUCT_NAME = "th-mcp";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		9DD2D415F0D9882FB10A3698 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.sandipchitale.TalkingHead.th-mcp";
+				PRODUCT_NAME = "th-mcp";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
 			};
 			name = Release;
 		};
@@ -519,6 +708,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		5C344C8283ECAEFA7B76A474 /* Build configuration list for PBXNativeTarget "th-mcp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7594CBB1F341B014913F579D /* Debug */,
+				9DD2D415F0D9882FB10A3698 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		BEF3E10C23FBFA16CCACF3D0 /* Build configuration list for PBXNativeTarget "TalkingHead" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -538,6 +736,53 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0916D54CCAC5A1DA69AC2A2C /* XCRemoteSwiftPackageReference "swift-nio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-nio.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.65.0;
+			};
+		};
+		ABCE62A1895F7AAAB4023A10 /* XCRemoteSwiftPackageReference "swift-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/modelcontextprotocol/swift-sdk.git";
+			requirement = {
+				kind = exactVersion;
+				version = 0.12.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		08DEBFAAE2DA034FDC77F470 /* NIOPosix */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0916D54CCAC5A1DA69AC2A2C /* XCRemoteSwiftPackageReference "swift-nio" */;
+			productName = NIOPosix;
+		};
+		2341697C39A620626D520B21 /* MCP */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ABCE62A1895F7AAAB4023A10 /* XCRemoteSwiftPackageReference "swift-sdk" */;
+			productName = MCP;
+		};
+		4FD1A9785FFB812C4DC7090F /* NIOCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0916D54CCAC5A1DA69AC2A2C /* XCRemoteSwiftPackageReference "swift-nio" */;
+			productName = NIOCore;
+		};
+		58C07149C5E48F33B01CEA2F /* NIOHTTP1 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0916D54CCAC5A1DA69AC2A2C /* XCRemoteSwiftPackageReference "swift-nio" */;
+			productName = NIOHTTP1;
+		};
+		7FD8AF518C7DD1422D1FC87C /* MCP */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ABCE62A1895F7AAAB4023A10 /* XCRemoteSwiftPackageReference "swift-sdk" */;
+			productName = MCP;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = EF0C483B7C3DE652498A33D5 /* Project object */;
 }

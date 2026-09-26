@@ -89,6 +89,11 @@ Its menu offers:
 - **Always on Top:** keeps the talking head (and its bubble) above other windows. Remembered between
   launches.
 - **Launch at Login.**
+- **MCP Server (port 8766):** serves the MCP tools over HTTP on this Mac only (see
+  [MCP server](#mcp-server)). Off by default; remembered between launches.
+- **MCP Server Config…:** a window with ready-made client configuration for both transports: a JSON
+  tab to copy into a file such as `.mcp.json`, and a Shell tab with a `claude`, `agy` or `codex`
+  command per host and transport, each with its own copy button. **Save…** writes the tab to a file.
 - **Quit.**
 
 ## Face window
@@ -153,6 +158,73 @@ passage using the text-fragment rules: `start`, `start,end`, and the optional `p
 context. Matching ignores case and differences in whitespace. Pages that build their text with
 JavaScript may have little or no text to read.
 
+## MCP server
+
+Talking Head is also an [MCP](https://modelcontextprotocol.io) server, so an AI agent can speak with
+its face. There are two ways to connect, both with the same tools:
+
+**Standard I/O (`th-mcp`).** The host starts `th-mcp`, which is inside the app. Point the host at it,
+for example in `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "talkinghead": {
+      "type": "stdio",
+      "command": "/Applications/TalkingHead.app/Contents/MacOS/th-mcp"
+    }
+  }
+}
+```
+
+Or, in Claude Code: `claude mcp add talkinghead -- /Applications/TalkingHead.app/Contents/MacOS/th-mcp`.
+**MCP Server Config…** in the menu has these entries, and the commands for other hosts, ready to copy.
+`th-mcp` speaks by running the `th` beside it, so it works whether or not the menu bar app is running.
+
+**Streamable HTTP (menu bar app).** Turn on **MCP Server (port 8766)** in the menu, or launch the app
+with `TALKINGHEAD_MCP_HTTP_PORT` set to start it on that port. It listens on `127.0.0.1` only:
+
+```json
+{
+  "mcpServers": {
+    "talkinghead": {
+      "type": "streamable-http",
+      "url": "http://localhost:8766/mcp"
+    }
+  }
+}
+```
+
+Any local user account on the Mac can reach a localhost port, which is why this server is off until
+you turn it on.
+
+**Tools**
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `speak` | `text` (required; may contain `[mood]` cues), `voice` (`male`/`female`), `mood`, `wait` (default `true`) | Speaks the text with the face, kept above other windows |
+| `speak_url` | `url` (http/https, may end in `#:~:text=…`), `voice`, `mood`, `wait` | Reads the page, or just the highlighted passage, as `th -u` does |
+| `stop` | none | Stops the speech, drops anything waiting, and closes the face |
+
+With `wait`, a call returns when the speech has finished; without it, as soon as it starts. Calls take
+turns: a new one waits for the previous speech to finish, so two faces never talk over each other.
+Problems (a page that can't be read, a passage that isn't on the page, an unknown mood) come back as
+tool errors with a plain sentence the agent can pass on.
+
+**How agents use it**
+
+- **Announcing when long tasks finish.** Add a line like this to `CLAUDE.md` or `AGENTS.md`:
+  `When a build, test run or other task takes more than a minute, announce the result with the
+  talkinghead speak tool: one or two sentences, with mood happy if it passed and concerned if it failed.`
+- **Narrated walkthroughs.** Ask the agent to walk you through some code out loud: it calls `speak`
+  (with `wait` left on) once per step, so each explanation finishes before it moves on to the next.
+- **Reading a page in its own words.** `speak_url` with a text fragment reads a passage exactly as
+  written, such as a changelog entry or a paragraph of documentation, instead of the agent's summary.
+
+**Web apps can't use it.** claude.ai, chatgpt.com and other web apps connect to MCP servers from their
+own servers, not from your Mac, so they can't reach a localhost server. They would need a public HTTPS
+tunnel with authentication in front of it, which Talking Head doesn't provide.
+
 ## How it works
 
 - **Speech:** `AVSpeechSynthesizer.write(_:toBufferCallback:)` renders the speech into audio buffers.
@@ -203,10 +275,19 @@ JavaScript may have little or no text to read.
 | `TalkingHead/ExternalRequests.swift` | The Services menu item and `talkinghead://` URLs |
 | `TalkingHead/WebPage.swift` | Downloads a page's text, or its highlighted passage |
 | `TalkingHead/TextFragment.swift` | Parses and finds `#:~:text=` text fragments |
+| `MCPTools/TalkingHeadTools.swift` | The MCP tools' definitions and handlers, shared by both transports |
+| `MCPTools/Speaking.swift` | `Speaker`, the interface the tools speak through, and `SpeechQueue`, which makes calls take turns |
+| `MCPTools/THProcessSpeaker.swift` | Speaks by running `th` (for `th-mcp`) |
+| `CLI/th-mcp/main.swift` | `th-mcp`, the stdio MCP server |
+| `TalkingHead/AppSpeaker.swift` | Speaks with the menu bar app's own face (for the HTTP server) |
+| `TalkingHead/MCPHTTPServer.swift` | The Streamable HTTP MCP server, served by the menu bar app |
+| `TalkingHead/MCPServerController.swift` | Turns the HTTP server on and off (menu item, `TALKINGHEAD_MCP_HTTP_PORT`) |
+| `TalkingHead/MCPConfigWindow.swift` | The MCP Server Config… window: sample client configuration to copy or save |
 | `TalkingHead/Info.plist` | Service, URL scheme and network settings (generated from `project.yml`) |
 | `TalkingHeadTests/` | Unit tests (Swift Testing) |
 | `TalkingHead/Assets.xcassets` | Portraits and their generated mouth and eyelid textures |
 | `CLI/th` | The `th` script, copied into the app bundle and signed at build time |
+| `MCPTools/` | Code compiled into both the app and `th-mcp` |
 | `project.yml` | XcodeGen project definition |
 
 ## Adding a portrait

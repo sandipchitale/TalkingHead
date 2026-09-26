@@ -14,6 +14,13 @@ final class FaceWindowSettings {
         }
     }
 
+    /// Keeps the face above other windows while an MCP client is speaking through it, without
+    /// changing (or saving) the user's own choice.
+    var keepsOnTopForSpeech = false
+
+    /// Whether the face window should float above other windows right now.
+    var floats: Bool { isAlwaysOnTop || keepsOnTopForSpeech }
+
     @ObservationIgnored private let persists: Bool
 
     init(options: LaunchOptions) {

@@ -18,6 +18,7 @@ struct FaceWindow: View {
     /// after speaking.
     @State private var isInteractive = false
     @State private var isPickingFile = false
+    @State private var hasReportedStart = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -38,7 +39,7 @@ struct FaceWindow: View {
             bubble.attach(to: window, content: SpeechBubbleView(bubble: bubble).environment(speech))
             applyAlwaysOnTop()
         })
-        .onChange(of: settings.isAlwaysOnTop) { applyAlwaysOnTop() }
+        .onChange(of: settings.floats) { applyAlwaysOnTop() }
         .task {
             switch options.mode {
             case .speak(let text):
@@ -55,6 +56,12 @@ struct FaceWindow: View {
             }
         }
         .onChange(of: speech.state) { old, new in
+            // `th --report-start` (run by th-mcp) says when the voice starts.
+            if options.reportsStart, !hasReportedStart, new == .speaking {
+                hasReportedStart = true
+                print("started")
+                fflush(stdout)
+            }
             // From the command line, quit once the text has been spoken (unless the user has
             // opened the typing window to carry on).
             if options.speaksAndQuits, !isInteractive, old != .idle, new == .idle {
@@ -110,7 +117,7 @@ struct FaceWindow: View {
     /// Floats the window (and its bubble) above other apps' windows, or returns it to normal.
     private func applyAlwaysOnTop() {
         guard let window else { return }
-        window.level = settings.isAlwaysOnTop ? .floating : .normal
+        window.level = settings.floats ? .floating : .normal
         bubble.matchParentLevel()
     }
 

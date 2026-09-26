@@ -68,7 +68,8 @@ animated face which will sync with the speech. This should run on MacOS.
 ### Menu bar applet
 - Runs as a menu bar applet: no Dock icon and no app menu.
 - The menu has: Show Talking Head, Type Text to Speak…, Play/Pause, Stop, Voice (Male/Female),
-  Speed (Slower/Normal/Faster), Always on Top, Launch at Login, and Quit.
+  Speed (Slower/Normal/Faster), Always on Top, Launch at Login, MCP Server (port N), MCP Server
+  Config…, and Quit.
 - **Always on Top** matches the face window's pin button and is remembered between launches.
 - Launched from Finder or at login, it starts with only the menu bar item and keeps running when its
   windows are closed.
@@ -103,3 +104,45 @@ animated face which will sync with the speech. This should run on MacOS.
 - **Text fragments:** for URLs with `#:~:text=[prefix-,]start[,end][,-suffix]`, only the referenced
   passage is spoken (case- and whitespace-insensitive). URLs without a fragment speak the whole page's
   text; a fragment that can't be found is reported as an error.
+
+### MCP server
+- Talking Head serves MCP tools over two transports, with the same tool definitions and handlers
+  (written once, in `MCPTools/`), using the MCP Swift SDK, exactly version 0.12.1:
+  - **stdio:** `th-mcp`, packaged in the app bundle next to `th` and signed before the app is.
+  - **Streamable HTTP:** served in-process by the menu bar applet at `http://127.0.0.1:<port>/mcp`,
+    bound to `127.0.0.1` only, never all interfaces. The default port is 8766.
+- **Tools:**
+  - `speak`: `text` (required; may contain `[mood]` cues), `voice` (`male`, `female`), `mood` (one of
+    the moods), `wait` (boolean, default true).
+  - `speak_url`: `url` (http or https, may end in `#:~:text=…`), `voice`, `mood`, `wait`. Reads the page,
+    or only its text-fragment passage, exactly as `th -u` does.
+  - `stop`: no arguments. Stops the current speech, drops speech waiting its turn, and closes the face.
+  - Their annotations say they are not read-only, not destructive and not idempotent.
+- Speech shows the face, kept above other windows. With `wait` true, a call returns when the speech has
+  finished; with `wait` false, as soon as it starts.
+- Calls are serialised: a new `speak` or `speak_url` waits for the previous one to finish, so two faces
+  never talk over each other. On HTTP, all sessions share one queue.
+- Errors (bad arguments, an unknown mood or voice, a page that can't be read, a text fragment not
+  found) come back as tool results with `isError` and a plain sentence the model can relay to the user.
+- **`th-mcp`:** writes nothing but JSON-RPC to standard output; diagnostics go to standard error. It
+  speaks by running the `th` beside it (following symlinks to find it) with `--always-on-top`, `-v`,
+  `-m` and `-u` as given, and text on standard input. `th`'s exit is the end of the speech; exit status
+  2 means it couldn't speak, and its `th: …` line on standard error is the error message. `stop`
+  terminates the running `th`. Standard input closing, SIGTERM and SIGINT shut `th-mcp` down cleanly,
+  ending any running `th`.
+- `th --report-start` (for `th-mcp`, not in the usage) prints `started` on standard output when the
+  voice starts.
+- **HTTP server:** off by default. The menu item "MCP Server (port N)" turns it on or off and is
+  remembered between launches. `TALKINGHEAD_MCP_HTTP_PORT` turns it on at launch, on that port. If the
+  port can't be bound, an alert says so and the server stays off. Only the menu bar applet serves
+  HTTP; an instance started by `th` never opens the port.
+- **MCP Server Config…** (menu bar applet) opens a window, as VoiceChat's does, with sample client
+  configuration for both transports (`talkinghead-stdio` running `th-mcp` from /Applications, and
+  `talkinghead-http` at the configured port): a JSON tab (an `mcpServers` document) and a Shell tab with
+  remove-then-add commands for Claude Code (`claude`), Antigravity (`agy`) and Codex (`codex`), grouped
+  by host, each with a copy button. Copy (Copy All on the Shell tab) copies the tab, and Save… writes it
+  to `mcp.json` or `talkinghead-mcp.sh`. The window floats above other windows. It keeps
+  the face above other windows while speaking without changing the user's Always on Top setting, uses
+  the requested voice and then restores the user's, and closes a face it opened about a second after
+  the last speech ends. Sessions are created by `initialize` (returning `Mcp-Session-Id`), closed by
+  `DELETE`, and expire after an hour idle.

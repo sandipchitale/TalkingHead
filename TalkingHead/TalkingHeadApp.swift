@@ -10,7 +10,7 @@ struct TalkingHeadApp: App {
     private let options = LaunchOptions.launch
     /// Shared by the menu, the face window, its speech bubble and the typing window.
     @State private var speech: SpeechEngine
-    @State private var faceSettings = FaceWindowSettings(options: LaunchOptions.launch)
+    @State private var faceSettings: FaceWindowSettings
     /// Only the applet started from Finder (or at login) shows the menu bar item; `th` runs
     /// don't add a second one.
     @State private var showsMenuBarItem = !LaunchOptions.launch.isCommandLine
@@ -18,8 +18,14 @@ struct TalkingHeadApp: App {
     init() {
         let speech = SpeechEngine()
         speech.portraitID = LaunchOptions.launch.portrait.id
+        let faceSettings = FaceWindowSettings(options: LaunchOptions.launch)
         _speech = State(initialValue: speech)
+        _faceSettings = State(initialValue: faceSettings)
         ExternalRequests.shared = ExternalRequests(speech: speech)
+        // Only the menu bar applet serves MCP over HTTP; a `th` run never opens the port.
+        if !LaunchOptions.launch.isCommandLine {
+            MCPServerController.shared = MCPServerController(speech: speech, faceSettings: faceSettings)
+        }
     }
 
     var body: some Scene {
@@ -113,6 +119,10 @@ struct MenuBarMenu: View {
 
         Toggle("Always on Top", isOn: $faceSettings.isAlwaysOnTop)
         Toggle("Launch at Login", isOn: Binding(get: { launchesAtLogin }, set: setLaunchAtLogin))
+        if let mcp = MCPServerController.shared {
+            Toggle("MCP Server (port \(String(mcp.port)))", isOn: Binding(get: { mcp.isRunning }, set: mcp.setEnabled))
+            Button("MCP Server Config…") { MCPConfigWindowController.show() }
+        }
 
         Button("Quit Talking Head") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
@@ -167,7 +177,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // The "Speak with Talking Head" service (see NSServices in Info.plist).
             NSApp.servicesProvider = ExternalRequests.shared
             NSUpdateDynamicServices()
+            MCPServerController.shared?.startAtLaunch()
         }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        MCPServerController.shared?.stop()
     }
 
     /// A `th` run ends when its windows are closed, returning the terminal; started from

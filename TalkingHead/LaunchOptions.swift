@@ -43,6 +43,9 @@ struct LaunchOptions {
     var mood: Mood?
     /// Keep the talking head above other windows (`--always-on-top`).
     var alwaysOnTop = false
+    /// Print `started` on standard output when the voice starts (`--report-start`, for
+    /// `th-mcp`, so it knows when speech has begun; not in the usage).
+    var reportsStart = false
 
     static let usage = """
         usage: th [-v|--voice male|female] [-m|--mood MOOD] [-t|--tty] [-f|--file path] [-u|--url URL] [--always-on-top] [text ...]
@@ -92,6 +95,7 @@ struct LaunchOptions {
         var path: String?
         var readsTerminal = false
         var alwaysOnTop = false
+        var reportsStart = false
         var words: [String] = []
         var webURL: URL?
 
@@ -106,6 +110,8 @@ struct LaunchOptions {
                 exit(0)
             case "--always-on-top":
                 alwaysOnTop = true
+            case "--report-start":
+                reportsStart = true
             case "-t", "--tty":
                 readsTerminal = true
             case "-v", "--voice":
@@ -140,10 +146,10 @@ struct LaunchOptions {
         guard sources <= 1 else { fail("give text arguments, --file, --url or --tty, not more than one") }
 
         if !isCLI {
-            return LaunchOptions(mode: .menuBar, portrait: portrait, mood: mood, alwaysOnTop: alwaysOnTop)
+            return LaunchOptions(mode: .menuBar, portrait: portrait, mood: mood, alwaysOnTop: alwaysOnTop, reportsStart: reportsStart)
         }
         if let webURL {
-            return LaunchOptions(mode: .speakURL(webURL), portrait: portrait, mood: mood, alwaysOnTop: alwaysOnTop)
+            return LaunchOptions(mode: .speakURL(webURL), portrait: portrait, mood: mood, alwaysOnTop: alwaysOnTop, reportsStart: reportsStart)
         }
         let text: String
         if !words.isEmpty {
@@ -153,10 +159,10 @@ struct LaunchOptions {
         } else if readsTerminal || isatty(STDIN_FILENO) == 0 {
             text = readStandardInput()
         } else {
-            return LaunchOptions(mode: .face, portrait: portrait, mood: mood, alwaysOnTop: alwaysOnTop)
+            return LaunchOptions(mode: .face, portrait: portrait, mood: mood, alwaysOnTop: alwaysOnTop, reportsStart: reportsStart)
         }
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { fail("no text to speak") }
-        return LaunchOptions(mode: .speak(text), portrait: portrait, mood: mood, alwaysOnTop: alwaysOnTop)
+        return LaunchOptions(mode: .speak(text), portrait: portrait, mood: mood, alwaysOnTop: alwaysOnTop, reportsStart: reportsStart)
     }
 
     private static func mood(named name: String) -> Mood {

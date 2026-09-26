@@ -49,6 +49,10 @@ final class SpeechEngine {
     @ObservationIgnored private var mood = Mood.neutral
     /// What was last asked for, to replay: the text as given, cues and all, and its mood.
     @ObservationIgnored private var lastRequest: (text: String, mood: Mood?) = ("", nil)
+    /// Callers waiting for an utterance (by generation) to end; see `end(of:)`.
+    @ObservationIgnored private var endWaiters: [(generation: UInt64, continuation: CheckedContinuation<SpeechEnd, Never>)] = []
+    /// How the last utterance to end ended.
+    @ObservationIgnored private var lastEnd: (generation: UInt64, end: SpeechEnd)?
 
     init() {
         pipeline = AudioPipeline { [weak self] generation in
@@ -58,10 +62,15 @@ final class SpeechEngine {
 
     /// Speaks `text`, showing `mood` throughout unless the text's own `[mood]` cues say
     /// otherwise; with no mood, the text's emoji and feeling words suggest one (see `Script`).
-    func speak(_ text: String, mood: Mood? = nil) {
+    /// Returns the utterance's generation, to wait for its end with `end(of:)`, or nil when
+    /// there is nothing to say.
+    @discardableResult
+    func speak(_ text: String, mood: Mood? = nil) -> UInt64? {
         let script = Script.parse(text.trimmingCharacters(in: .whitespacesAndNewlines), mood: mood)
         let spoken = script.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !spoken.isEmpty else { return }
+        guard !spoken.isEmpty else { return nil }
+        // Speaking over an utterance cuts it short.
+        if state != .idle { ended(.stopped) }
         lastRequest = (text, mood)
         self.script = script
         self.mood = script.mood(at: 0)
@@ -70,6 +79,17 @@ final class SpeechEngine {
         generation = pipeline.speak(script.text, voice: Self.bestVoice(named: portrait.voiceName), rate: rate)
         state = .speaking
         startTicking()
+        return generation
+    }
+
+    /// Waits for the utterance `generation` (from `speak`) to end: finished, or stopped (by
+    /// `stop`, or by speaking something else).
+    func end(of generation: UInt64) async -> SpeechEnd {
+        if generation == self.generation, state != .idle {
+            return await withCheckedContinuation { endWaiters.append((generation, $0)) }
+        }
+        if let lastEnd, lastEnd.generation == generation { return lastEnd.end }
+        return .stopped
     }
 
     func pause() {
@@ -86,6 +106,7 @@ final class SpeechEngine {
     }
 
     func stop() {
+        if state != .idle { ended(.stopped) }
         pipeline.stop()
         finish()
     }
@@ -106,7 +127,16 @@ final class SpeechEngine {
 
     private func didFinish(_ finished: UInt64) {
         guard finished == generation, state != .idle else { return }
+        ended(.finished)
         finish()
+    }
+
+    /// Records how the current utterance ended and tells those waiting for it.
+    private func ended(_ end: SpeechEnd) {
+        lastEnd = (generation, end)
+        let waiting = endWaiters.filter { $0.generation == generation }
+        endWaiters.removeAll { $0.generation == generation }
+        for waiter in waiting { waiter.continuation.resume(returning: end) }
     }
 
     private func finish() {
