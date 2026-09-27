@@ -29,8 +29,8 @@ final class MCPServerController {
     @ObservationIgnored private let queue: SpeechQueue
     @ObservationIgnored private var server: MCPHTTPServer?
 
-    init(speech: SpeechEngine, faceSettings: FaceWindowSettings) {
-        queue = SpeechQueue(speaker: AppSpeaker(speech: speech, settings: faceSettings))
+    init(spooler: SpeechSpooler) {
+        queue = SpeechQueue(speaker: SpoolerSpeaker(spooler: spooler))
     }
 
     /// Starts the server if the user left it on, or the environment asks for it.

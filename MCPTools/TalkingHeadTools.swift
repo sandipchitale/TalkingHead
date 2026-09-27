@@ -1,5 +1,6 @@
 import Foundation
 import MCP
+import Synchronization
 
 /// The MCP tools, `speak`, `speak_url` and `stop`: their definitions and handlers, shared by
 /// every transport (`th-mcp` over stdio, the menu bar app over Streamable HTTP) so they can't
@@ -51,7 +52,7 @@ nonisolated enum TalkingHeadTools {
     private static let waitSchema: Value = .object([
         "type": .string("boolean"),
         "default": .bool(true),
-        "description": .string("true (the default): return when the speech has finished. false: return as soon as it starts. Either way, a later call waits for this speech to finish before speaking."),
+        "description": .string("true (the default): return when the speech has finished. false: return as soon as it starts. A call never blocks longer than about 45 seconds: if the speech is still going (or still waiting its turn), the call returns saying so and the speech carries on by itself, so don't call again to repeat it. Either way, a later call waits for this speech to finish before speaking."),
     ])
 
     static let speakTool = Tool(
@@ -170,22 +171,89 @@ nonisolated enum TalkingHeadTools {
 
     // MARK: Handling calls
 
-    /// Handles a tool call. Failures come back as error results carrying a plain sentence.
-    static func call(_ name: String, arguments: [String: Value]?, queue: SpeechQueue) async -> CallTool.Result {
+    /// How long a call may block before it returns while the speech carries on:
+    /// `TALKINGHEAD_MCP_WAIT_MS`, 45 s by default (clients time tool calls out, Codex at 60 s).
+    static var waitLimit: Duration {
+        let milliseconds = ProcessInfo.processInfo.environment["TALKINGHEAD_MCP_WAIT_MS"].flatMap(Int.init) ?? 45_000
+        return .milliseconds(max(1_000, milliseconds))
+    }
+
+    static let stillSpeaking = "Still speaking. It will finish on its own; don't call again to repeat it."
+    static let stillWaiting = "Waiting for earlier speech to finish; this will be spoken after it on its own. Don't call again to repeat it."
+
+    /// Handles a tool call. Failures come back as error results carrying a plain sentence. While
+    /// it waits, `progress` is told every `interval` what it is waiting for; after `waitLimit` it
+    /// returns a normal result saying the speech carries on.
+    static func call(_ name: String, arguments: [String: Value]?, queue: SpeechQueue,
+                     waitLimit: Duration = waitLimit, interval: Duration = .seconds(5),
+                     progress: (@Sendable (String) async -> Void)? = nil) async -> CallTool.Result {
         if name == stopName {
             await queue.stop()
-            return CallTool.Result(content: [.text(text: "Stopped speaking and closed the face.")], isError: false)
+            return result("Stopped speaking and closed the face.", isError: false)
         }
+        let request: SpeechRequest
+        let wait: Bool
         do {
-            let (request, wait) = try request(forTool: name, arguments: arguments)
-            let outcome = try await queue.speak(request, wait: wait)
-            return CallTool.Result(content: [.text(text: summary(of: outcome))], isError: false)
-        } catch let failure as SpeechFailure {
-            return CallTool.Result(content: [.text(text: failure.message)], isError: true)
+            (request, wait) = try self.request(forTool: name, arguments: arguments)
         } catch {
-            return CallTool.Result(content: [.text(text: "Talking Head couldn't speak: \(error.localizedDescription)")],
-                                   isError: true)
+            return failure(error)
         }
+
+        enum Step: Sendable {
+            case done(Result<SpeechQueue.Outcome, Error>)
+            case tick
+            case timeUp
+        }
+        let hasStarted = Mutex(false)
+        let (steps, next) = AsyncStream.makeStream(of: Step.self)
+        let work = Task {
+            do {
+                let outcome = try await queue.speak(request, wait: wait) { hasStarted.withLock { $0 = true } }
+                next.yield(.done(.success(outcome)))
+            } catch {
+                next.yield(.done(.failure(error)))
+            }
+        }
+        let ticker = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: interval)
+                if !Task.isCancelled { next.yield(.tick) }
+            }
+        }
+        let timer = Task {
+            try? await Task.sleep(for: waitLimit)
+            if !Task.isCancelled { next.yield(.timeUp) }
+        }
+        defer {
+            ticker.cancel()
+            timer.cancel()
+            _ = work  // carries on speaking after a time-up
+        }
+
+        for await step in steps {
+            switch step {
+            case .done(.success(let outcome)):
+                return result(summary(of: outcome), isError: false)
+            case .done(.failure(let error)):
+                return failure(error)
+            case .tick:
+                await progress?(hasStarted.withLock { $0 } ? "Speaking…" : "Waiting for earlier speech…")
+            case .timeUp:
+                let text = hasStarted.withLock { $0 } ? stillSpeaking : stillWaiting
+                return result(text, isError: false)
+            }
+        }
+        return result(stillSpeaking, isError: false)
+    }
+
+    /// A result carrying one sentence.
+    static func result(_ text: String, isError: Bool) -> CallTool.Result {
+        CallTool.Result(content: [.text(text: text, annotations: nil, _meta: nil)], isError: isError)
+    }
+
+    private static func failure(_ error: Error) -> CallTool.Result {
+        let text = (error as? SpeechFailure)?.message ?? "Talking Head couldn't speak: \(error.localizedDescription)"
+        return result(text, isError: true)
     }
 
     static func summary(of outcome: SpeechQueue.Outcome) -> String {
@@ -203,7 +271,18 @@ nonisolated enum TalkingHeadTools {
             ListTools.Result(tools: tools)
         }
         await server.withMethodHandler(CallTool.self) { params in
-            await call(params.name, arguments: params.arguments, queue: queue)
+            // Progress keeps a client's own timer from running out while a call waits.
+            let token = params._meta?.progressToken
+            let count = Mutex(0.0)
+            return await call(params.name, arguments: params.arguments, queue: queue) { message in
+                guard let token else { return }
+                let progress = count.withLock { count in
+                    count += 1
+                    return count
+                }
+                try? await server.notify(ProgressNotification.message(
+                    .init(progressToken: token, progress: progress, message: message)))
+            }
         }
     }
 }

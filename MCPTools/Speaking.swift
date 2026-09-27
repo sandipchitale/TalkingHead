@@ -55,9 +55,10 @@ nonisolated protocol Speaker: Sendable {
     func stop() async
 }
 
-/// Speaks one request at a time, so two faces never talk over each other: a new request waits
-/// for the previous one to finish before it starts. `stop` ends the current speech and drops
-/// the requests waiting behind it.
+/// Speaks one request at a time: a new request waits for the previous one to finish before it
+/// starts. `stop` ends the current speech and drops the requests waiting behind it, and so does
+/// speech being stopped from elsewhere (the menu's Stop, another client's `stop`): stop means
+/// silence. Across processes, the menu bar app's spooler keeps callers in one queue.
 actor SpeechQueue {
     enum Outcome: Sendable, Equatable {
         /// The speech started (for a caller that doesn't wait for the end).
@@ -80,18 +81,26 @@ actor SpeechQueue {
     }
 
     /// Speaks `request` after anything already queued. With `wait`, returns when the speech has
-    /// ended; otherwise as soon as it starts. Throws `SpeechFailure`.
-    func speak(_ request: SpeechRequest, wait: Bool) async throws -> Outcome {
+    /// ended; otherwise as soon as it starts. `onStarted` is called when the voice starts.
+    /// Throws `SpeechFailure`.
+    func speak(_ request: SpeechRequest, wait: Bool,
+               onStarted: @escaping @Sendable () -> Void = {}) async throws -> Outcome {
         // Taken before any suspension, so requests keep the order they arrived in.
         let previous = tail
         let ticket = stops
         let start = Task { () async throws -> SpeechHandle? in
             await previous?.value
-            return try await self.begin(request, ticket: ticket)
+            let handle = try await self.begin(request, ticket: ticket)
+            if handle != nil { onStarted() }
+            return handle
         }
         let run = Task { () async throws -> Outcome in
             guard let handle = try await start.value else { return .dropped }
-            return try await handle.finished() == .finished ? .finished : .stopped
+            guard try await handle.finished() == .finished else {
+                self.silence()
+                return .stopped
+            }
+            return .finished
         }
         tail = Task { _ = try? await run.value }
 
@@ -105,6 +114,11 @@ actor SpeechQueue {
     func stop() async {
         stops += 1
         await speaker.stop()
+    }
+
+    /// Drops what is queued behind speech that was stopped.
+    private func silence() {
+        stops += 1
     }
 
     private func begin(_ request: SpeechRequest, ticket: Int) async throws -> SpeechHandle? {

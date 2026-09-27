@@ -23,8 +23,37 @@ final class SpeechEngine {
 
     /// The faces on offer, each with its own voice, sorted by voice name.
     let portraits = Portrait.all.sorted { $0.voiceName < $1.voiceName }
-    var portraitID = Portrait.man.id
-    var portrait: Portrait { portraits.first { $0.id == portraitID } ?? .man }
+    /// The chosen voice (and face). The menu bar applet saves it (`SavedVoice`), so `th-mcp` can
+    /// use it when the app isn't running.
+    var portraitID = Portrait.man.id {
+        didSet {
+            if savesVoice { UserDefaults.standard.set(Self.voiceName(of: portraitID), forKey: SavedVoice.key) }
+        }
+    }
+    /// A voice asked for just for the utterance being spoken (by an MCP call, say), leaving the
+    /// chosen one alone.
+    private(set) var voiceOverride: Portrait.ID?
+    /// The face and voice being used: the utterance's own, else the chosen one.
+    var portrait: Portrait {
+        let id = voiceOverride ?? portraitID
+        return portraits.first { $0.id == id } ?? .man
+    }
+    /// Whether choosing a voice saves it (the menu bar applet, not a `th` run).
+    @ObservationIgnored var savesVoice = false
+
+    /// "male" or "female", as `th -v` and the MCP tools name voices.
+    static func voiceName(of id: Portrait.ID) -> String {
+        id == Portrait.woman.id ? "female" : "male"
+    }
+
+    static func portraitID(forVoice name: String) -> Portrait.ID {
+        name == "female" ? Portrait.woman.id : Portrait.man.id
+    }
+
+    /// The last text spoken (as given, cues and all) and its mood, to play again.
+    var replay: (text: String, mood: Mood?)? {
+        lastRequest.text.isEmpty ? nil : lastRequest
+    }
     /// Incremented to ask for the face window to be shown (e.g. when another app sends text);
     /// the menu bar item's view, which can open windows, reacts to it.
     private(set) var faceRequests = 0
@@ -64,13 +93,15 @@ final class SpeechEngine {
     /// otherwise; with no mood, the text's emoji and feeling words suggest one (see `Script`).
     /// Returns the utterance's generation, to wait for its end with `end(of:)`, or nil when
     /// there is nothing to say.
+    /// `voice`, if given, is used for this utterance only.
     @discardableResult
-    func speak(_ text: String, mood: Mood? = nil) -> UInt64? {
+    func speak(_ text: String, mood: Mood? = nil, voice: Portrait.ID? = nil) -> UInt64? {
         let script = Script.parse(text.trimmingCharacters(in: .whitespacesAndNewlines), mood: mood)
         let spoken = script.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !spoken.isEmpty else { return nil }
         // Speaking over an utterance cuts it short.
         if state != .idle { ended(.stopped) }
+        voiceOverride = voice
         lastRequest = (text, mood)
         self.script = script
         self.mood = script.mood(at: 0)
@@ -115,16 +146,6 @@ final class SpeechEngine {
         faceRequests += 1
     }
 
-    /// Play/pause: pauses while speaking, resumes when paused, and replays the last
-    /// text when idle.
-    func togglePlayback() {
-        switch state {
-        case .speaking: pause()
-        case .paused: resume()
-        case .idle: speak(lastRequest.text, mood: lastRequest.mood)
-        }
-    }
-
     private func didFinish(_ finished: UInt64) {
         guard finished == generation, state != .idle else { return }
         ended(.finished)
@@ -142,6 +163,7 @@ final class SpeechEngine {
     private func finish() {
         state = .idle
         currentWordRange = nil
+        voiceOverride = nil
         // The ticker keeps running until the mouth and brows have settled.
         if ticker == nil { startTicking() }
     }

@@ -3,8 +3,8 @@ import ServiceManagement
 import SwiftUI
 
 /// A menu bar applet (no Dock icon or app menu, see `LSUIElement`). The menu bar item opens
-/// the talking head and the typing window, plays and pauses, and picks the voice.
-@main
+/// the talking head and the typing window, plays and pauses, and picks the voice. (Started by
+/// `Entry`, which first lets a `th` run hand its speech to a running applet.)
 struct TalkingHeadApp: App {
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
     private let options = LaunchOptions.launch
@@ -17,14 +17,26 @@ struct TalkingHeadApp: App {
 
     init() {
         let speech = SpeechEngine()
-        speech.portraitID = LaunchOptions.launch.portrait.id
+        if LaunchOptions.launch.isCommandLine {
+            speech.portraitID = LaunchOptions.launch.portrait.id
+        } else {
+            // The applet remembers the voice chosen in its menu (`th-mcp` reads it too).
+            if let saved = UserDefaults.standard.string(forKey: SavedVoice.key) {
+                speech.portraitID = SpeechEngine.portraitID(forVoice: saved)
+            }
+            speech.savesVoice = true
+        }
         let faceSettings = FaceWindowSettings(options: LaunchOptions.launch)
         _speech = State(initialValue: speech)
         _faceSettings = State(initialValue: faceSettings)
-        ExternalRequests.shared = ExternalRequests(speech: speech)
-        // Only the menu bar applet serves MCP over HTTP; a `th` run never opens the port.
+        let spooler = SpeechSpooler(performer: FacePerformer(speech: speech, settings: faceSettings))
+        SpeechSpooler.shared = spooler
+        ExternalRequests.shared = ExternalRequests(speech: speech, spooler: spooler)
+        // Only the menu bar applet serves MCP over HTTP and the spooler's socket; a `th` run
+        // never opens either.
         if !LaunchOptions.launch.isCommandLine {
-            MCPServerController.shared = MCPServerController(speech: speech, faceSettings: faceSettings)
+            MCPServerController.shared = MCPServerController(spooler: spooler)
+            AppDelegate.spoolerServer = SpoolerServer(spooler: spooler)
         }
     }
 
@@ -94,9 +106,10 @@ struct MenuBarMenu: View {
 
         Divider()
 
-        Button(speech.state == .speaking ? "Pause" : "Play") { speech.togglePlayback() }
-            .disabled(speech.state == .idle && speech.spokenText.isEmpty)
-        Button("Stop") { speech.stop() }
+        Button(speech.state == .speaking ? "Pause" : "Play") { SpeechSpooler.shared.togglePlayback(speech) }
+            .disabled(speech.state == .idle && speech.replay == nil)
+        // Silence: ends the speech and clears the queue, whoever queued it.
+        Button("Stop") { SpeechSpooler.shared.stopAll() }
             .disabled(speech.state == .idle)
 
         Divider()
@@ -164,6 +177,9 @@ struct MenuBarMenu: View {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// The applet's spooler socket, for `th` and `th-mcp`.
+    static var spoolerServer: SpoolerServer?
+
     func applicationWillFinishLaunching(_ notification: Notification) {
         // Before launch finishes, so a talkinghead:// URL that launched the app is received.
         ExternalRequests.shared?.registerURLHandler()
@@ -178,11 +194,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.servicesProvider = ExternalRequests.shared
             NSUpdateDynamicServices()
             MCPServerController.shared?.startAtLaunch()
+            do {
+                try Self.spoolerServer?.start()
+            } catch {
+                // Another applet already serves it; this one speaks only its own requests.
+                NSLog("Talking Head speech spooler not started: \(error)")
+                Self.spoolerServer = nil
+            }
         }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         MCPServerController.shared?.stop()
+        Self.spoolerServer?.stop()
     }
 
     /// A `th` run ends when its windows are closed, returning the terminal; started from

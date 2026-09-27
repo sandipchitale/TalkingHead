@@ -91,6 +91,11 @@ animated face which will sync with the speech. This should run on MacOS.
   head.
 - When given text, `th` shows the face, speaks, and quits when done. It stays open if the typing window
   or file picker was used.
+- When the menu bar app is running, a `th` with text to speak (arguments, `--file`, `--url`, standard
+  input or `--tty`) hands it to the app's spooler instead of showing its own face (always naming its
+  voice: male unless `-v female`), waits until the speech has finished, and exits as it would have: 0
+  when finished or stopped, 2 with its `th: …` message when the speech can't be spoken. SIGTERM or SIGINT
+  ends it and so cancels only its own request. `--report-start` works the same way.
 - `th` quits when its windows are closed. It doesn't add a menu bar item of its own.
 - `-h`/`--help` prints usage. Invalid options, voices, moods, unreadable files or pages, and text fragments
   not found on the page print an error and exit with status 2.
@@ -120,16 +125,32 @@ animated face which will sync with the speech. This should run on MacOS.
   - Their annotations say they are not read-only, not destructive and not idempotent.
 - Speech shows the face, kept above other windows. With `wait` true, a call returns when the speech has
   finished; with `wait` false, as soon as it starts.
-- Calls are serialised: a new `speak` or `speak_url` waits for the previous one to finish, so two faces
-  never talk over each other. On HTTP, all sessions share one queue.
+- No call blocks longer than `TALKINGHEAD_MCP_WAIT_MS` (default 45000). When that is reached, the call
+  returns a normal (not error) result, "Still speaking. It will finish on its own; don't call again to
+  repeat it." (or, if the speech is still waiting its turn, "Waiting for earlier speech to finish; …"),
+  and the speech carries on. The `wait` parameter's description says so.
+- While a call waits, when the request carries a `progressToken`, a `notifications/progress` goes out
+  every 5 s: "Waiting for earlier speech…" or "Speaking…". Both transports (over HTTP, the SDK sends
+  them on the session's standalone GET stream).
+- Calls are serialised: a new `speak` or `speak_url` waits for the previous one to finish. While the
+  menu bar app runs, every caller shares its one queue (see Speech spooler); otherwise each `th-mcp`
+  process has its own.
+- `stop` means silence: it ends the current speech and clears the whole queue, whoever queued it, and
+  closes the face. Speech stopped from elsewhere (the menu's Stop) also drops a caller's own queued
+  requests.
+- Leaving out `voice` means the voice chosen in the menu bar app's menu: through the spooler the app uses
+  its current voice; without the app, `th-mcp` reads the app's saved choice and passes it to `th` (male
+  if none was ever chosen).
 - Errors (bad arguments, an unknown mood or voice, a page that can't be read, a text fragment not
   found) come back as tool results with `isError` and a plain sentence the model can relay to the user.
-- **`th-mcp`:** writes nothing but JSON-RPC to standard output; diagnostics go to standard error. It
-  speaks by running the `th` beside it (following symlinks to find it) with `--always-on-top`, `-v`,
-  `-m` and `-u` as given, and text on standard input. `th`'s exit is the end of the speech; exit status
-  2 means it couldn't speak, and its `th: …` line on standard error is the error message. `stop`
-  terminates the running `th`. Standard input closing, SIGTERM and SIGINT shut `th-mcp` down cleanly,
-  ending any running `th`.
+- **`th-mcp`:** writes nothing but JSON-RPC to standard output; diagnostics go to standard error. For
+  each call, when the menu bar app's spooler socket answers, it hands the speech to the spooler (with
+  `alwaysOnTop`) and follows its events; otherwise it runs the `th` beside it (following symlinks to find
+  it) with `--always-on-top`, `-v`, `-m` and `-u` as given, and text on standard input. `th`'s exit is
+  the end of the speech; exit status 2 means it couldn't speak, and its `th: …` line on standard error is
+  the error message. `stop` sends the spooler a `stop` and terminates a running `th`. Standard input
+  closing, SIGTERM and SIGINT shut `th-mcp` down cleanly, cancelling its own speech (its spooler
+  connections close; a running `th` is ended).
 - `th --report-start` (for `th-mcp`, not in the usage) prints `started` on standard output when the
   voice starts.
 - **HTTP server:** off by default. The menu item "MCP Server (port N)" turns it on or off and is
@@ -141,8 +162,24 @@ animated face which will sync with the speech. This should run on MacOS.
   `talkinghead-http` at the configured port): a JSON tab (an `mcpServers` document) and a Shell tab with
   remove-then-add commands for Claude Code (`claude`), Antigravity (`agy`) and Codex (`codex`), grouped
   by host, each with a copy button. Copy (Copy All on the Shell tab) copies the tab, and Save… writes it
-  to `mcp.json` or `talkinghead-mcp.sh`. The window floats above other windows. It keeps
-  the face above other windows while speaking without changing the user's Always on Top setting, uses
-  the requested voice and then restores the user's, and closes a face it opened about a second after
-  the last speech ends. Sessions are created by `initialize` (returning `Mcp-Session-Id`), closed by
-  `DELETE`, and expire after an hour idle.
+  to `mcp.json` or `talkinghead-mcp.sh`. The window floats above other windows.
+- The HTTP server speaks through the menu bar app's spooler. HTTP sessions are created by `initialize`
+  (returning `Mcp-Session-Id`), closed by `DELETE`, and expire after an hour idle.
+
+### Speech spooler
+- While the menu bar app runs, it owns the face and speaks everything from one first-in, first-out
+  queue: `th` (and so VoiceChat), every `th-mcp` process, the HTTP MCP server, `talkinghead://` links,
+  the Services menu, and the app's own typing window, file button and Play.
+- It listens on a Unix domain socket, `~/Library/Application Support/TalkingHead/speech.sock`, 0600 in
+  a 0700 folder, accepting only the same user. The protocol is newline-delimited JSON, one `speak` per
+  connection: requests `speak` {`text` | `url`, `voice`?, `mood`?, `alwaysOnTop`?} and `stop`; events
+  `queued`, `started`, then `finished`, `stopped` or `error` {`message`}. `stop` is answered `stopped`.
+- A caller whose connection closes has its queued requests dropped, and its speech stopped if it is the
+  one speaking. Everyone else's speech is unaffected.
+- `stop` (the MCP tool, or the socket's) and the menu's Stop end the current speech and clear the whole
+  queue, whoever queued it.
+- For each job the face uses the job's voice for that speech only (else the menu's choice), floats if
+  asked, and a face opened for spooled speech closes about a second after the queue empties. The menu's
+  voice choice is saved (`voice`, `male` or `female`) for `th-mcp` to read when the app isn't running.
+- Only the menu bar applet serves the socket; an instance started by `th` never does. `th` and `th-mcp`
+  never launch the app: without it, they behave as they would alone.

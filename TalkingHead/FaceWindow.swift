@@ -43,10 +43,11 @@ struct FaceWindow: View {
         .task {
             switch options.mode {
             case .speak(let text):
-                speech.speak(text, mood: options.mood)
+                SpeechSpooler.shared.submit(SpeechRequest(source: .text(text), mood: options.mood?.rawValue))
             case .speakURL(let url):
                 do {
-                    speech.speak(try await WebPage.speakableText(for: url), mood: options.mood)
+                    let text = try await WebPage.speakableText(for: url)
+                    SpeechSpooler.shared.submit(SpeechRequest(source: .text(text), mood: options.mood?.rawValue))
                 } catch {
                     FileHandle.standardError.write(Data("th: can't read \(url.absoluteString): \(error.localizedDescription)\n".utf8))
                     exit(2)
@@ -77,10 +78,10 @@ struct FaceWindow: View {
         let isSpeaking = speech.state == .speaking
         return HStack(spacing: 10) {
             Button(isSpeaking ? "Pause" : "Play", systemImage: isSpeaking ? "pause.fill" : "play.fill") {
-                speech.togglePlayback()
+                SpeechSpooler.shared.togglePlayback(speech)
             }
             .keyboardShortcut(.space, modifiers: [])
-            .disabled(speech.state == .idle && speech.spokenText.isEmpty)
+            .disabled(speech.state == .idle && speech.replay == nil)
             .help(isSpeaking ? "Pause (Space)" : "Play (Space)")
 
             Button("Type Text", systemImage: "macwindow") {
@@ -128,7 +129,7 @@ struct FaceWindow: View {
             if isAccessing { url.stopAccessingSecurityScopedResource() }
         }
         do {
-            speech.speak(try TextFile.read(url))
+            SpeechSpooler.shared.submit(SpeechRequest(source: .text(try TextFile.read(url))))
         } catch {
             NSAlert(error: error).runModal()
         }

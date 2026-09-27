@@ -10,9 +10,11 @@ final class ExternalRequests: NSObject {
     static var shared: ExternalRequests?
 
     private let speech: SpeechEngine
+    private let spooler: SpeechSpooler
 
-    init(speech: SpeechEngine) {
+    init(speech: SpeechEngine, spooler: SpeechSpooler) {
         self.speech = speech
+        self.spooler = spooler
     }
 
     /// Starts receiving `talkinghead://` URLs, including the one that launched the app.
@@ -58,12 +60,11 @@ final class ExternalRequests: NSObject {
             showError("Talking Head can't open \(url.absoluteString).")
             return
         }
-        if let portrait = request.portrait, speech.state == .idle {
-            speech.portraitID = portrait
-        }
+        // A link's voice is for its own speech; the menu's choice stays as it is.
+        let voice = request.portrait.map(SpeechEngine.voiceName(of:))
         switch request.source {
-        case .text(let text): speak(text: text, mood: request.mood)
-        case .url(let url): speak(url: url, mood: request.mood)
+        case .text(let text): speak(text: text, mood: request.mood, voice: voice)
+        case .url(let url): speak(url: url, mood: request.mood, voice: voice)
         }
     }
 
@@ -106,19 +107,16 @@ final class ExternalRequests: NSObject {
 
     // MARK: Speaking
 
-    private func speak(text: String, mood: Mood? = nil) {
-        speech.speak(text, mood: mood)
+    /// Queued behind any speech already going (see `SpeechSpooler`).
+    private func speak(text: String, mood: Mood? = nil, voice: String? = nil) {
+        spooler.submit(SpeechRequest(source: .text(text), voice: voice, mood: mood?.rawValue))
         speech.requestFace()
     }
 
-    private func speak(url: URL, mood: Mood? = nil) {
+    private func speak(url: URL, mood: Mood? = nil, voice: String? = nil) {
         speech.requestFace()
-        Task {
-            do {
-                speech.speak(try await WebPage.speakableText(for: url), mood: mood)
-            } catch {
-                showError("Couldn't read \(url.absoluteString): \(error.localizedDescription)")
-            }
+        spooler.submit(SpeechRequest(source: .url(url), voice: voice, mood: mood?.rawValue)) { [weak self] event in
+            if event.type == .error { self?.showError(event.message ?? "Couldn't read \(url.absoluteString).") }
         }
     }
 

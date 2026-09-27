@@ -130,6 +130,12 @@ th [-v|--voice male|female] [-m|--mood MOOD] [-t|--tty] [-f|--file path] [-u|--u
 window or file picker, it stays open after speaking. `th --help` prints usage. Errors print a message
 and exit with status 2.
 
+**When the menu bar app is running,** `th` hands its speech to it instead of showing a face of its
+own: the speech waits its turn behind anything already queued and is spoken by the app's face. `th`
+still waits until its speech has finished and exits the same way (0 when done, 2 with a `th: …`
+message on error). Killing it (Control-C, `kill`) takes back only its own speech: dropped if it was
+waiting, stopped if it was speaking.
+
 ## Speaking from other apps
 
 **Services menu.** Select text in any app (for an email in Mail, click in the message and press ⌘A), then
@@ -179,7 +185,8 @@ for example in `.mcp.json`:
 
 Or, in Claude Code: `claude mcp add talkinghead -- /Applications/TalkingHead.app/Contents/MacOS/th-mcp`.
 **MCP Server Config…** in the menu has these entries, and the commands for other hosts, ready to copy.
-`th-mcp` speaks by running the `th` beside it, so it works whether or not the menu bar app is running.
+`th-mcp` hands its speech to the menu bar app when that is running, and otherwise runs the `th`
+beside it, so it works either way.
 
 **Streamable HTTP (menu bar app).** Turn on **MCP Server (port 8766)** in the menu, or launch the app
 with `TALKINGHEAD_MCP_HTTP_PORT` set to start it on that port. It listens on `127.0.0.1` only:
@@ -206,8 +213,22 @@ you turn it on.
 | `speak_url` | `url` (http/https, may end in `#:~:text=…`), `voice`, `mood`, `wait` | Reads the page, or just the highlighted passage, as `th -u` does |
 | `stop` | none | Stops the speech, drops anything waiting, and closes the face |
 
-With `wait`, a call returns when the speech has finished; without it, as soon as it starts. Calls take
-turns: a new one waits for the previous speech to finish, so two faces never talk over each other.
+With `wait`, a call returns when the speech has finished; without it, as soon as it starts. Either way
+a call blocks for at most 45 seconds (`TALKINGHEAD_MCP_WAIT_MS`): if the speech is still going, or still
+waiting its turn, the call returns a normal result saying so ("Still speaking. It will finish on its
+own; don't call again to repeat it.") and the speech carries on. While a call waits, it sends a progress
+notification every 5 seconds when the client asks for them, so the client's own timeout doesn't run
+out. (Over HTTP, the SDK sends these on the session's GET event stream.)
+
+**Taking turns.** While the menu bar app is running, it owns the face and speaks everything from one
+queue, in the order it arrives: every `th-mcp` process (each agent session starts its own), the HTTP
+server, `th` (including VoiceChat's), links, the Services menu, and the app's own typing window. So
+two agents announcing at once are spoken one after the other, by one face. Without the menu bar app,
+each `th-mcp` process takes turns only with itself. `stop`, like **Stop** in the menu, means silence:
+it ends the current speech and clears the whole queue, whoever queued it.
+
+Leaving out `voice` uses the voice chosen in the menu bar app's menu (remembered between launches),
+whether or not the app is running.
 Problems (a page that can't be read, a passage that isn't on the page, an unknown mood) come back as
 tool errors with a plain sentence the agent can pass on.
 
@@ -253,6 +274,15 @@ tunnel with authentication in front of it, which Talking Head doesn't provide.
 - **`th`:** `th` is a shell script inside the app bundle (`Contents/MacOS/th`). It runs the app
   executable with the arguments packed into one `-THArguments` value, because AppKit would treat
   bare arguments such as file names as documents to open.
+- **One queue (the speech spooler):** the menu bar app keeps a single first-in, first-out queue for
+  everything the face says, and listens on a Unix domain socket,
+  `~/Library/Application Support/TalkingHead/speech.sock` (0600, in a 0700 folder), with a tiny
+  newline-delimited JSON protocol: `speak` {`text` or `url`, `voice`, `mood`, `alwaysOnTop`} and
+  `stop`, answered with `queued`, `started`, `finished`, `stopped` or `error` {`message`}. Before its
+  own window starts, a `th` run with something to say connects to the socket; if the app answers, `th`
+  sends its speech and waits for the result instead of showing a face. `th-mcp` does the same for each
+  call. A caller whose connection closes has its queued speech dropped, and its speech stopped if it is
+  speaking.
 
 ## Source layout
 
@@ -277,9 +307,11 @@ tunnel with authentication in front of it, which Talking Head doesn't provide.
 | `TalkingHead/TextFragment.swift` | Parses and finds `#:~:text=` text fragments |
 | `MCPTools/TalkingHeadTools.swift` | The MCP tools' definitions and handlers, shared by both transports |
 | `MCPTools/Speaking.swift` | `Speaker`, the interface the tools speak through, and `SpeechQueue`, which makes calls take turns |
-| `MCPTools/THProcessSpeaker.swift` | Speaks by running `th` (for `th-mcp`) |
+| `MCPTools/THProcessSpeaker.swift` | Speaks by running `th` (for `th-mcp` when the menu bar app isn't running) |
+| `MCPTools/Spooler.swift` | The spooler's socket protocol and client, and `th-mcp`'s `RoutingSpeaker` (spooler, else `th`) |
 | `CLI/th-mcp/main.swift` | `th-mcp`, the stdio MCP server |
-| `TalkingHead/AppSpeaker.swift` | Speaks with the menu bar app's own face (for the HTTP server) |
+| `TalkingHead/SpeechSpooler.swift` | The one speech queue, the face that speaks it, and its socket server |
+| `TalkingHead/Entry.swift` | The app's entry point: a `th` run hands its speech to a running menu bar app |
 | `TalkingHead/MCPHTTPServer.swift` | The Streamable HTTP MCP server, served by the menu bar app |
 | `TalkingHead/MCPServerController.swift` | Turns the HTTP server on and off (menu item, `TALKINGHEAD_MCP_HTTP_PORT`) |
 | `TalkingHead/MCPConfigWindow.swift` | The MCP Server Config… window: sample client configuration to copy or save |

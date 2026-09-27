@@ -58,6 +58,6 @@ struct InputWindow: View {
                 window?.makeKeyAndOrderFront(nil)
             }
         }
-        speech.speak(text)
+        SpeechSpooler.shared.submit(SpeechRequest(source: .text(text)))
     }
 }

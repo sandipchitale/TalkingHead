@@ -1,8 +1,9 @@
 import Foundation
 import MCP
 
-// th-mcp: Talking Head's MCP server over stdio. It serves the tools in `TalkingHeadTools` and
-// speaks by running the `th` command beside it in TalkingHead.app/Contents/MacOS.
+// th-mcp: Talking Head's MCP server over stdio. It serves the tools in `TalkingHeadTools`. While
+// the menu bar app runs, it hands speech to the app's spooler, so every caller shares one queue
+// and one face; otherwise it runs the `th` command beside it in TalkingHead.app/Contents/MacOS.
 //
 // Nothing but JSON-RPC may reach standard output: diagnostics go to standard error, and `th`
 // runs with its output captured.
@@ -26,7 +27,7 @@ guard FileManager.default.isExecutableFile(atPath: th.path) else {
 let appInfo = NSDictionary(contentsOf: folder.deletingLastPathComponent().appendingPathComponent("Info.plist"))
 let version = appInfo?["CFBundleShortVersionString"] as? String ?? "0"
 
-let speaker = THProcessSpeaker(executable: th)
+let speaker = RoutingSpeaker(th: th)
 let queue = SpeechQueue(speaker: speaker)
 
 let server = Server(
@@ -36,10 +37,11 @@ let server = Server(
 )
 await TalkingHeadTools.register(on: server, queue: queue)
 
-/// Ends any speech (so no face is left talking) and exits.
+/// Cancels this process's speech (so no face is left talking for it) and exits. Other
+/// callers' speech in the spooler carries on.
 func shutDown(_ reason: String) async -> Never {
     log("shutting down: \(reason)")
-    await speaker.stop()
+    await speaker.shutDown()
     exit(0)
 }
 
