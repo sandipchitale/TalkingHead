@@ -85,6 +85,9 @@ struct Portrait: Identifiable {
 
     var id: String { voiceName }
 
+    /// The face's name, for its window's title: "Man" or "Woman".
+    var faceName: String { voiceName == "Samantha" ? "Woman" : "Man" }
+
     init(voiceName: String, imageName: String, size: CGSize, mouthPatchRect: CGRect, eyelidsRect: CGRect,
          eyes: [CGRect], brows: [BrowRegion], browLift: Double, mouthCenter: CGPoint, mouthScale: Double,
          lip: Color) {

@@ -1,3 +1,4 @@
+import AVFoundation
 import AppKit
 import Foundation
 import Testing
@@ -383,5 +384,58 @@ struct ProsodyTests {
         #expect(Emphasis.brows(for: NSRange(location: 0, length: 3), in: text) == 1)
         #expect(Emphasis.brows(for: NSRange(location: 0, length: 3), in: text, accent: 0) == nil)
         #expect(Emphasis.brows(for: today, in: text, accent: 0.1) == nil)
+    }
+}
+
+struct VoiceQualityTests {
+    @Test func betterDownloadsCountAsTheSameVoice() {
+        #expect(SpeechEngine.isVoice("Samantha", named: "Samantha"))
+        #expect(SpeechEngine.isVoice("Samantha (Enhanced)", named: "Samantha"))
+        #expect(SpeechEngine.isVoice("Daniel (Premium)", named: "Daniel"))
+        #expect(!SpeechEngine.isVoice("Danielle", named: "Daniel"))
+    }
+
+    /// On a Mac with an Enhanced or Premium Samantha installed, that is the one used.
+    @MainActor
+    @Test func theBestInstalledQualityIsUsed() {
+        let installed = AVSpeechSynthesisVoice.speechVoices().filter { SpeechEngine.isVoice($0.name, named: "Samantha") }
+        let best = SpeechEngine.bestVoice(named: "Samantha")
+        #expect(best?.quality.rawValue == installed.map(\.quality.rawValue).max())
+    }
+}
+
+struct FaceVoiceTests {
+    private let installed = AVSpeechSynthesisVoice.speechVoices()
+
+    @Test func aChosenVoiceIsUsedWhileInstalled() throws {
+        let ava = installed.first { $0.name.hasPrefix("Ava") } ?? installed.first { $0.gender == .female }
+        let chosen = try #require(ava)
+        #expect(SpeechEngine.resolveVoice(chosen: chosen.identifier, portrait: .woman, installed: installed) == chosen)
+    }
+
+    @Test func otherwiseTheFacesOwnVoice() {
+        let own = SpeechEngine.resolveVoice(chosen: "com.example.gone", portrait: .man, installed: installed)
+        #expect(own.map { SpeechEngine.isVoice($0.name, named: "Daniel") } ?? true)
+        #expect(SpeechEngine.resolveVoice(chosen: nil, portrait: .woman, installed: installed)
+                == SpeechEngine.bestVoice(named: "Samantha", among: installed))
+    }
+
+    @Test func eachFaceIsOfferedOnlyVoicesOfItsGender() {
+        #expect(SpeechEngine.choosableVoices(for: .man, among: installed).allSatisfy { $0.gender == .male })
+        #expect(SpeechEngine.choosableVoices(for: .woman, among: installed).allSatisfy { $0.gender == .female })
+        // A saved choice that doesn't suit the face falls back to its own voice.
+        if let woman = installed.first(where: { $0.gender == .female }) {
+            #expect(SpeechEngine.resolveVoice(chosen: woman.identifier, portrait: .man, installed: installed)
+                    == SpeechEngine.bestVoice(named: "Daniel", among: installed))
+        }
+    }
+
+    @Test func choosableVoicesAreEnglishOnePerNameBestFirst() {
+        let voices = SpeechEngine.choosableVoices(for: .woman, among: installed)
+        #expect(voices.allSatisfy { $0.language.hasPrefix("en") && !$0.voiceTraits.contains(.isNoveltyVoice) })
+        let names = voices.map { SpeechEngine.plainName($0.name) }
+        #expect(Set(names).count == names.count)
+        #expect(zip(voices, voices.dropFirst()).allSatisfy { $0.quality.rawValue >= $1.quality.rawValue })
+        #expect(SpeechEngine.plainName("Ava (Premium)") == "Ava")
     }
 }

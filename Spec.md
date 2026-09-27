@@ -11,7 +11,15 @@ animated face which will sync with the speech. This should run on MacOS.
 ### Platform
 - macOS 26 (Tahoe) or later, SwiftUI, Swift 6.
 - Speech uses Apple's native engine (`AVSpeechSynthesizer`) with the system voices **Daniel** (male)
-  and **Samantha** (female), at the best installed quality of each.
+  and **Samantha** (female), at the best installed quality of each (the downloadable "Daniel
+  (Enhanced)", "Samantha (Premium)" and so on count as the same voice).
+- Each face can instead speak with an installed English voice of its gender, as macOS labels it (voices
+  labelled neither male nor female, and novelty voices, aren't offered), chosen in the menu (Man's Voice,
+  Woman's Voice) and saved per face (`faceVoice.<Daniel|Samantha>`, the voice's
+  identifier). A chosen voice that is no longer installed, or doesn't suit the face, falls back to the
+  face's own. The choice
+  applies wherever that face speaks: the app, `th` (with or without the menu bar app), links and MCP.
+  The menu and the typing window's greeting use the name of the voice speaking.
 
 ### Talking head
 - Each voice has its own portrait: a man for Daniel, a woman for Samantha.
@@ -48,7 +56,9 @@ animated face which will sync with the speech. This should run on MacOS.
 - Cues win over a mood given for the whole text, which wins over the guesses.
 - The mood holds through a pause and fades back to neutral when the speech ends.
 ### Face window
-- A separate, resizable, draggable window showing only the talking head, titled with the voice name.
+- A separate, resizable, draggable window showing only the talking head, titled with the face ("Man" or
+  "Woman") and subtitled with the voice speaking for it (no subtitle when macOS's default voice speaks,
+  because neither the chosen voice nor the face's own is installed).
 - A toolbar centred below the head holds small round icon buttons:
   - **Play/Pause** (Space). When idle, it replays the last text.
   - **Type text to speak** (window icon) opens the typing window.
@@ -67,9 +77,11 @@ animated face which will sync with the speech. This should run on MacOS.
 
 ### Menu bar applet
 - Runs as a menu bar applet: no Dock icon and no app menu.
-- The menu has: Show Talking Head, Type Text to Speak…, Play/Pause, Stop, Voice (Male/Female),
-  Speed (Slower/Normal/Faster), Always on Top, Launch at Login, MCP Server (port N), MCP Server
-  Config…, and Quit.
+- The menu has: Show Talking Head, Type Text to Speak…, Play/Pause, Stop, Voice (Man/Woman, each
+  shown with the voice it uses, e.g. "Woman (Ava)"), Man's Voice and Woman's Voice (the voice each face
+  speaks with: its own, or an installed English voice of its gender, best quality first), Speed
+  (Slower/Normal/Faster), Always on Top, Launch at Login, MCP Server (port N), MCP Server Config…, and
+  Quit.
 - **Always on Top** matches the face window's pin button and is remembered between launches.
 - Launched from Finder or at login, it starts with only the menu bar item and keeps running when its
   windows are closed.

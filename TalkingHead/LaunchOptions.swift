@@ -54,7 +54,9 @@ struct LaunchOptions {
         the file, the web page, what you type at the terminal (--tty), or piped standard
         input. With none of these, just shows the talking head.
 
-          -v, --voice VOICE  male (Daniel, the default) or female (Samantha)
+          -v, --voice VOICE  male (the default) or female: the man's or woman's face, speaking
+                             with its voice (Daniel or Samantha, unless another is chosen
+                             in the menu bar app's Male Voice or Female Voice menu)
           -m, --mood MOOD    the face's mood while speaking:
                              \(Mood.names)
                              Without it, the text suggests one (emoji like 😊, words

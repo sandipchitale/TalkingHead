@@ -46,6 +46,11 @@ source is [`docs/index.html`](docs/index.html).
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen), only if you change `project.yml`
   (`brew install xcodegen`)
 
+**Better voices (recommended).** macOS ships compact versions of Daniel and Samantha. For a much more
+natural sound, download **Daniel (Enhanced)** and **Samantha (Enhanced)** (free): System Settings →
+Accessibility → **Read & Speak**, click the ⓘ next to Speak selection, choose **English**, click
+**Voice**, and download them. Talking Head uses the best installed quality of each voice on its own.
+
 ## Build
 
 ```sh
@@ -84,7 +89,12 @@ Its menu offers:
 - **Show Talking Head** opens the face window.
 - **Type Text to Speak…** opens a window with a text box and a Speak button (⌘⏎).
 - **Play/Pause** and **Stop**.
-- **Voice:** Male (Daniel) or Female (Samantha).
+- **Voice:** Man or Woman: which face speaks, shown with the voice it uses, e.g. "Woman (Ava)".
+- **Man's Voice** and **Woman's Voice:** the voice each face speaks with: its own (Daniel or Samantha,
+  at the best quality installed) or an installed English voice of the same gender, best quality first,
+  such as a downloaded Premium voice like Ava or Zoe. Voices macOS doesn't label as male or female
+  aren't offered. Remembered, and used everywhere that face speaks: the app,
+  `th`, links, VoiceChat and MCP.
 - **Speed:** Slower, Normal or Faster (applies from the next text spoken).
 - **Always on Top:** keeps the talking head (and its bubble) above other windows. Remembered between
   launches.
@@ -98,7 +108,7 @@ Its menu offers:
 
 ## Face window
 
-- The title is the voice name.
+- The title is the face, **Man** or **Woman**, with the voice speaking for it as a subtitle.
 - Click the head to show or hide the speech bubble. It starts hidden, and moves and resizes with the
   window.
 - The toolbar below the head has four buttons:

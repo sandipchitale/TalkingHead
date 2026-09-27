@@ -83,10 +83,74 @@ final class SpeechEngine {
     /// How the last utterance to end ended.
     @ObservationIgnored private var lastEnd: (generation: UInt64, end: SpeechEnd)?
 
+    /// The voice chosen in the menu for each face (by `AVSpeechSynthesisVoice` identifier), when
+    /// it isn't the face's own (Daniel or Samantha). Saved, and read by `th` runs too.
+    private(set) var chosenVoices: [Portrait.ID: String] = [:]
+
+    private static func chosenVoiceKey(_ portrait: Portrait.ID) -> String { "faceVoice.\(portrait)" }
+
     init() {
         pipeline = AudioPipeline { [weak self] generation in
             Task { @MainActor in self?.didFinish(generation) }
         }
+        for portrait in Portrait.all {
+            chosenVoices[portrait.id] = UserDefaults.standard.string(forKey: Self.chosenVoiceKey(portrait.id))
+        }
+    }
+
+    /// Chooses the voice a face speaks with (nil: the face's own, Daniel or Samantha), and saves it.
+    func choose(voice identifier: String?, for portrait: Portrait.ID) {
+        chosenVoices[portrait] = identifier
+        UserDefaults.standard.set(identifier, forKey: Self.chosenVoiceKey(portrait))
+    }
+
+    /// The voice `portrait` speaks with, or nil when none of its voices is installed (macOS then
+    /// uses its default voice).
+    func voice(for portrait: Portrait) -> AVSpeechSynthesisVoice? {
+        Self.resolveVoice(chosen: chosenVoices[portrait.id], portrait: portrait,
+                          installed: AVSpeechSynthesisVoice.speechVoices())
+    }
+
+    /// The name of the voice `portrait` speaks with, without its quality ("Ava", "Samantha"),
+    /// or nil when macOS's default voice speaks for it.
+    func voiceName(for portrait: Portrait) -> String? {
+        voice(for: portrait).map { Self.plainName($0.name) }
+    }
+
+    /// The chosen voice if it is still installed and suits the face, else the best installed
+    /// quality of the face's own voice.
+    static func resolveVoice(chosen: String?, portrait: Portrait, installed: [AVSpeechSynthesisVoice]) -> AVSpeechSynthesisVoice? {
+        if let chosen, let voice = installed.first(where: { $0.identifier == chosen }), suits(voice, portrait) {
+            return voice
+        }
+        return bestVoice(named: portrait.voiceName, among: installed)
+    }
+
+    /// Whether `voice` is a man's voice for the man's face, or a woman's for the woman's, as macOS
+    /// labels it. Voices macOS doesn't label either way aren't offered.
+    static func suits(_ voice: AVSpeechSynthesisVoice, _ portrait: Portrait) -> Bool {
+        voice.gender == (portrait.id == Portrait.woman.id ? .female : .male)
+    }
+
+    /// Voices `portrait` can use: installed English voices of its gender (no novelty ones), one per
+    /// name at its best quality, best quality first, then by name.
+    static func choosableVoices(for portrait: Portrait,
+                                among installed: [AVSpeechSynthesisVoice] = AVSpeechSynthesisVoice.speechVoices()) -> [AVSpeechSynthesisVoice] {
+        var best: [String: AVSpeechSynthesisVoice] = [:]
+        for voice in installed where voice.language.hasPrefix("en") && !voice.voiceTraits.contains(.isNoveltyVoice)
+            && suits(voice, portrait) {
+            let name = plainName(voice.name)
+            if let current = best[name], current.quality.rawValue >= voice.quality.rawValue { continue }
+            best[name] = voice
+        }
+        return best.values.sorted {
+            ($0.quality.rawValue, plainName($1.name)) > ($1.quality.rawValue, plainName($0.name))
+        }
+    }
+
+    /// "Ava (Premium)" → "Ava".
+    static func plainName(_ name: String) -> String {
+        name.components(separatedBy: " (").first ?? name
     }
 
     /// Speaks `text`, showing `mood` throughout unless the text's own `[mood]` cues say
@@ -107,7 +171,7 @@ final class SpeechEngine {
         self.mood = script.mood(at: 0)
         spokenText = script.text
         currentWordRange = nil
-        generation = pipeline.speak(script.text, voice: Self.bestVoice(named: portrait.voiceName), rate: rate)
+        generation = pipeline.speak(script.text, voice: self.voice(for: portrait), rate: rate)
         state = .speaking
         startTicking()
         return generation
@@ -224,11 +288,18 @@ final class SpeechEngine {
         return abs(next - target) < 0.005 ? target : next
     }
 
-    /// The highest-quality installed voice with this name.
-    private static func bestVoice(named name: String) -> AVSpeechSynthesisVoice? {
-        AVSpeechSynthesisVoice.speechVoices()
-            .filter { $0.name == name }
+    /// The highest-quality installed voice with this name ("Samantha", "Samantha (Enhanced)"…).
+    static func bestVoice(named name: String,
+                          among voices: [AVSpeechSynthesisVoice] = AVSpeechSynthesisVoice.speechVoices()) -> AVSpeechSynthesisVoice? {
+        voices
+            .filter { isVoice($0.name, named: name) }
             .max { $0.quality.rawValue < $1.quality.rawValue }
+    }
+
+    /// Whether `voiceName` is `name` in any quality: better downloads are named "Samantha
+    /// (Enhanced)" or "Samantha (Premium)".
+    static func isVoice(_ voiceName: String, named name: String) -> Bool {
+        voiceName == name || voiceName.hasPrefix(name + " (")
     }
 
     /// Maps speech RMS (roughly 0 ... 0.25 for system voices) to 0 ... 1.

@@ -37,14 +37,19 @@ struct InputWindow: View {
             bringToFront(window)
         })
         .onAppear {
-            if text.isEmpty { text = LaunchOptions.defaultText(voiceName: speech.portrait.voiceName) }
+            if text.isEmpty { text = LaunchOptions.defaultText(voiceName: greetingName) }
         }
-        // Portrait IDs are voice names. An untouched greeting follows the voice.
-        .onChange(of: speech.portraitID) { old, new in
+        // An untouched greeting follows the voice: the face, or the voice chosen for it.
+        .onChange(of: greetingName) { old, new in
             if text == LaunchOptions.defaultText(voiceName: old) {
                 text = LaunchOptions.defaultText(voiceName: new)
             }
         }
+    }
+
+    /// Who the greeting says is speaking: the voice, else the face.
+    private var greetingName: String {
+        speech.voiceName(for: speech.portrait) ?? speech.portrait.faceName
     }
 
     /// Speaks the text, opening the talking head if it isn't showing, and keeps the keyboard

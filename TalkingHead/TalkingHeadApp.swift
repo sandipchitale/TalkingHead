@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import ServiceManagement
 import SwiftUI
 
@@ -115,11 +116,13 @@ struct MenuBarMenu: View {
         Divider()
 
         Picker("Voice", selection: $speech.portraitID) {
-            Text("Male (Daniel)").tag(Portrait.man.id)
-            Text("Female (Samantha)").tag(Portrait.woman.id)
+            Text(faceLabel(.man)).tag(Portrait.man.id)
+            Text(faceLabel(.woman)).tag(Portrait.woman.id)
         }
         .pickerStyle(.inline)
         .disabled(speech.state != .idle)
+        voiceMenu("Man's Voice", for: .man)
+        voiceMenu("Woman's Voice", for: .woman)
 
         Picker("Speed", selection: $speech.rate) {
             ForEach(SpeechEngine.rates, id: \.rate) { option in
@@ -139,6 +142,31 @@ struct MenuBarMenu: View {
 
         Button("Quit Talking Head") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
+    }
+
+    /// "Woman (Ava)": the face, and the voice it speaks with.
+    private func faceLabel(_ portrait: Portrait) -> String {
+        speech.voiceName(for: portrait).map { "\(portrait.faceName) (\($0))" } ?? portrait.faceName
+    }
+
+    /// Chooses the voice a face speaks with: its own (Daniel or Samantha, at the best installed
+    /// quality) or an installed English voice of its gender, best quality first. Better voices are downloaded
+    /// in System Settings → Accessibility → Read & Speak.
+    private func voiceMenu(_ title: String, for portrait: Portrait) -> some View {
+        let choice = Binding<String?>(
+            get: { speech.chosenVoices[portrait.id] },
+            set: { speech.choose(voice: $0, for: portrait.id) })
+        return Menu(title) {
+            Picker(title, selection: choice) {
+                Text("\(portrait.voiceName) (the face's own voice)").tag(String?.none)
+                Divider()
+                ForEach(SpeechEngine.choosableVoices(for: portrait), id: \.identifier) { voice in
+                    Text(voice.name).tag(String?.some(voice.identifier))
+                }
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+        }
     }
 
     /// Registered as a login item, including when macOS is still waiting for the user to

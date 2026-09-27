@@ -32,7 +32,9 @@ struct FaceWindow: View {
             toolbar
         }
         .frame(minWidth: 220, maxWidth: .infinity, minHeight: 330, maxHeight: .infinity)
-        .navigationTitle(speech.portrait.voiceName)
+        // The face, with the voice speaking for it (none when macOS's default voice speaks).
+        .navigationTitle(speech.portrait.faceName)
+        .navigationSubtitle(speech.voiceName(for: speech.portrait) ?? "")
         .background(WindowAccessor { window in
             self.window = window
             bringToFront(window)

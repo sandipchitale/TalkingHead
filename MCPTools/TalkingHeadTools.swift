@@ -40,7 +40,7 @@ nonisolated enum TalkingHeadTools {
     private static let voiceSchema: Value = .object([
         "type": .string("string"),
         "enum": .array(SpeechRequest.voices.map { .string($0) }),
-        "description": .string("The voice and face: male (Daniel) or female (Samantha). Omit to keep the current one."),
+        "description": .string("The face: male or female, each speaking with the voice chosen for it in Talking Head's menu (Daniel and Samantha unless changed). Omit to use the face currently chosen in the menu."),
     ])
 
     private static let moodSchema: Value = .object([
