@@ -77,6 +77,7 @@ animated face which will sync with the speech. This should run on MacOS.
 
 ### Menu bar applet
 - Runs as a menu bar applet: no Dock icon and no app menu.
+- The menu starts with a heading showing the app's name and version ("Talking Head 0.0.8").
 - The menu has: Show Talking Head, Type Text to Speak…, Play/Pause, Stop, Voice (Man/Woman, each
   shown with the voice it uses, e.g. "Woman (Ava)"), Man's Voice and Woman's Voice (the voice each face
   speaks with: its own, or an installed English voice of its gender, best quality first), Speed

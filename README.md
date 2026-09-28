@@ -84,7 +84,7 @@ also check that it's allowed in System Settings → Menu Bar.
 ## Menu bar applet
 
 Launched from Finder or at login, Talking Head runs only in the menu bar: no Dock icon and no app menu.
-Its menu offers:
+Its menu starts with a heading, **Talking Head** and its version (e.g. "Talking Head 0.0.8"), then offers:
 
 - **Show Talking Head** opens the face window.
 - **Type Text to Speak…** opens a window with a text box and a Speak button (⌘⏎).

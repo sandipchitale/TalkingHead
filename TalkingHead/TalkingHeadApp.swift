@@ -98,9 +98,15 @@ struct MenuBarMenu: View {
     @Environment(\.openWindow) private var openWindow
     @State private var launchesAtLogin = MenuBarMenu.isLoginItem
 
+    private static let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+
     var body: some View {
         @Bindable var speech = speech
         @Bindable var faceSettings = faceSettings
+
+        // The app's name and version, as a heading.
+        Text("Talking Head \(Self.version)")
+        Divider()
 
         Button("Show Talking Head") { show(FaceWindow.id) }
         Button("Type Text to Speak…") { show(InputWindow.id) }
