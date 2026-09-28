@@ -198,15 +198,19 @@ final class FacePerformer: SpoolPerformer {
         if closingFace {
             Self.faceWindow?.close()
             openedFace = false
+            speech.releaseFace()
             return
         }
-        guard openedFace else { return }
-        // A moment's grace, in case more speech follows.
+        // A moment's grace, in case more speech follows. Then a face opened for the speech closes,
+        // still showing the face that spoke, and the menu's chosen face comes back.
         closing = Task {
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled, speech.state == .idle, SpeechSpooler.shared.current == nil else { return }
-            Self.faceWindow?.close()
-            openedFace = false
+            if openedFace {
+                Self.faceWindow?.close()
+                openedFace = false
+            }
+            speech.releaseFace()
         }
     }
 

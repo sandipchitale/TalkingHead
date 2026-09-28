@@ -28,10 +28,13 @@ final class SpeechEngine {
     var portraitID = Portrait.man.id {
         didSet {
             if savesVoice { UserDefaults.standard.set(Self.voiceName(of: portraitID), forKey: SavedVoice.key) }
+            // Choosing a face shows it straight away.
+            if state == .idle { voiceOverride = nil }
         }
     }
-    /// A voice asked for just for the utterance being spoken (by an MCP call, say), leaving the
-    /// chosen one alone.
+    /// A face asked for just for the speech (by `th -v`, an MCP call or a link), leaving the chosen
+    /// one alone. It stays after the speech ends, so the face that spoke doesn't turn into the other
+    /// one while its window closes; `releaseFace()` goes back to the chosen face.
     private(set) var voiceOverride: Portrait.ID?
     /// The face and voice being used: the utterance's own, else the chosen one.
     var portrait: Portrait {
@@ -224,10 +227,14 @@ final class SpeechEngine {
         for waiter in waiting { waiter.continuation.resume(returning: end) }
     }
 
+    /// Goes back to the face chosen in the menu, once nothing is speaking.
+    func releaseFace() {
+        if state == .idle { voiceOverride = nil }
+    }
+
     private func finish() {
         state = .idle
         currentWordRange = nil
-        voiceOverride = nil
         // The ticker keeps running until the mouth and brows have settled.
         if ticker == nil { startTicking() }
     }
