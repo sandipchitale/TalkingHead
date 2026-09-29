@@ -60,6 +60,16 @@ final class SpeechEngine {
     /// Incremented to ask for the face window to be shown (e.g. when another app sends text);
     /// the menu bar item's view, which can open windows, reacts to it.
     private(set) var faceRequests = 0
+    /// Whether the last request should bring Talking Head forward. Presence opens the face
+    /// quietly, so someone typing elsewhere keeps the keyboard.
+    private(set) var faceRequestActivates = true
+
+    /// The presence shown between speeches (listening, thinking), or nil.
+    private(set) var presence: Presence.State?
+    /// The pose for `presence`, eased in and out; neutral while speaking.
+    private(set) var presencePose = PresencePose.neutral
+    /// When the last nod started, for the face to animate it.
+    private(set) var nodStarted: Date?
 
     /// Speech rate, from `AVSpeechUtteranceMinimumSpeechRate` to `AVSpeechUtteranceMaximumSpeechRate`;
     /// the default is a little slower than the system's. Applies from the next utterance.
@@ -209,8 +219,23 @@ final class SpeechEngine {
         finish()
     }
 
-    func requestFace() {
+    func requestFace(activating: Bool = true) {
+        faceRequestActivates = activating
         faceRequests += 1
+    }
+
+    /// Shows `presence` between speeches (nil for none), with `voice` picking the face (nil: the
+    /// menu's choice).
+    func show(presence: Presence.State?, voice: Portrait.ID?) {
+        self.presence = presence == Presence.State.none ? nil : presence
+        if state == .idle { voiceOverride = self.presence == nil ? voiceOverride : voice }
+        if ticker == nil { startTicking() }
+    }
+
+    /// A one-shot nod, while showing presence.
+    func nod() {
+        guard presence != nil, state == .idle else { return }
+        nodStarted = Date()
     }
 
     private func didFinish(_ finished: UInt64) {
@@ -282,8 +307,11 @@ final class SpeechEngine {
         // The mood holds through a pause and fades once the speech is over.
         let expressionTarget = state == .idle ? FaceExpression.neutral : mood.face
         expression = expression.approaching(expressionTarget, rate: 0.06)
+        // Presence only between speeches, easing in and out over about a quarter of a second.
+        let poseTarget = state == .idle ? PresencePose.target(for: presence) : .neutral
+        presencePose = presencePose.approaching(poseTarget, rate: 0.2)
 
-        if state != .speaking, !mouthMoving, brows == 0, expression == expressionTarget {
+        if state != .speaking, !mouthMoving, brows == 0, expression == expressionTarget, presencePose == poseTarget {
             ticker?.cancel()
             ticker = nil
         }

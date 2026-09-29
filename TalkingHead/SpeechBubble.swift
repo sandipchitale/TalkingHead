@@ -109,7 +109,11 @@ struct SpeechBubbleView: View {
     var body: some View {
         let shape = BubbleShape(tailEdge: bubble.tailEdge)
         Group {
-            if speech.spokenText.isEmpty {
+            if speech.presence == .thinking, speech.state == .idle {
+                // Thinking, between speeches: a quietly animated ellipsis.
+                ThinkingDots()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if speech.spokenText.isEmpty {
                 Text("…")
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -157,5 +161,18 @@ nonisolated struct BubbleShape: Shape {
         pointer.closeSubpath()
 
         return bubble.union(pointer)
+    }
+}
+
+/// "…" drawn one dot at a time, for a face that is thinking. Redraws a few times a second only.
+struct ThinkingDots: View {
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 0.4)) { timeline in
+            let count = Int(timeline.date.timeIntervalSinceReferenceDate / 0.4) % 4
+            Text(String(repeating: "·", count: max(1, count)) + String(repeating: " ", count: 3 - max(1, count)))
+                .font(.largeTitle.monospaced())
+                .foregroundStyle(.secondary)
+                .accessibilityLabel("Thinking")
+        }
     }
 }

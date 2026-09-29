@@ -33,7 +33,7 @@ enum Forwarding {
 
         while let event = connection.nextEvent() {
             switch event.type {
-            case .queued:
+            case .queued, .presence:
                 continue
             case .started:
                 if reportsStart {

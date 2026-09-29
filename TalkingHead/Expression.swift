@@ -109,3 +109,41 @@ nonisolated enum Emphasis {
 
     private static let quotes: Set<Character> = ["\"", "'", "“", "”", "‘", "’"]
 }
+
+/// How the face holds itself for a presence (see `Presence`): the brows (together and one against
+/// the other) and lowered eyelids. The head itself stays still; blinking is life enough. Eased like
+/// moods; neutral while speaking.
+nonisolated struct PresencePose: Sendable, Equatable {
+    /// Lift of both brows, in the same units as `FaceExpression.brows`.
+    var brows: Double
+    /// Added to the first brow and taken from the second: one lifted, the other level or knit.
+    var browAsymmetry: Double
+    /// How far the upper eyelids come down, 0 ... 1.
+    var lids: Double
+
+    static let neutral = PresencePose(brows: 0, browAsymmetry: 0, lids: 0)
+
+    /// Listening: attentive, brows a little up.
+    static let listening = PresencePose(brows: 0.1, browAsymmetry: 0, lids: 0)
+    /// Thinking: one brow up and the other level, eyes lowered.
+    static let thinking = PresencePose(brows: 0.15, browAsymmetry: 0.25, lids: 0.25)
+
+    static func target(for state: Presence.State?) -> PresencePose {
+        switch state {
+        case .listening: .listening
+        case .thinking: .thinking
+        case .some(.none), nil: .neutral
+        }
+    }
+
+    /// Moves a fraction of the way to `target`, snapping to it when close.
+    func approaching(_ target: PresencePose, rate: Double) -> PresencePose {
+        func step(_ value: Double, _ goal: Double, snap: Double) -> Double {
+            let next = value + (goal - value) * rate
+            return abs(next - goal) < snap ? goal : next
+        }
+        return PresencePose(brows: step(brows, target.brows, snap: 0.005),
+                            browAsymmetry: step(browAsymmetry, target.browAsymmetry, snap: 0.005),
+                            lids: step(lids, target.lids, snap: 0.005))
+    }
+}

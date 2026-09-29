@@ -14,6 +14,17 @@ import Synchronization
 // A connection carries one `speak`, whose events end with `finished`, `stopped` or `error`
 // (a `stop` is answered with `stopped`). Closing the connection early cancels the speech: dropped
 // from the queue, or stopped if it is the one speaking.
+//
+// Presence: a client can also keep a long-lived connection and tell the face what state to show
+// between speeches. Any local client may use it; the app knows nothing about who sends it.
+//
+//   → {"type":"presence","state":"listening","voice":"female"}   or "thinking", or "none"
+//   → {"type":"presence","state":"listening","pulse":"nod"}      a one-shot nod
+//   ← {"type":"presence"}                                          each one acknowledged
+//
+// The newest message on a connection replaces its last one. `none`, or the connection closing,
+// drops it. Presence is never queued; speech overrides it and the face returns to it afterwards.
+// A connection that carries presence carries nothing else.
 
 nonisolated enum Spooler {
     /// ~/Library/Application Support/TalkingHead/speech.sock, or `TALKINGHEAD_SPOOLER_SOCKET`.
@@ -28,7 +39,7 @@ nonisolated enum Spooler {
 
 /// A message to the spooler.
 nonisolated struct SpoolerRequest: Codable, Sendable, Equatable {
-    enum Kind: String, Codable, Sendable { case speak, stop }
+    enum Kind: String, Codable, Sendable { case speak, stop, presence }
 
     var type: Kind
     var text: String?
@@ -36,8 +47,16 @@ nonisolated struct SpoolerRequest: Codable, Sendable, Equatable {
     var voice: String?
     var mood: String?
     var alwaysOnTop: Bool?
+    /// For `presence`: `listening`, `thinking` or `none`.
+    var state: String?
+    /// For `presence`: a one-shot gesture; only `nod` for now.
+    var pulse: String?
 
     static let stop = SpoolerRequest(type: .stop)
+
+    static func presence(_ state: Presence.State, voice: String? = nil, nod: Bool = false) -> SpoolerRequest {
+        SpoolerRequest(type: .presence, voice: voice, state: state.rawValue, pulse: nod ? "nod" : nil)
+    }
 
     static func speak(_ request: SpeechRequest, alwaysOnTop: Bool) -> SpoolerRequest {
         var message = SpoolerRequest(type: .speak, voice: request.voice, mood: request.mood, alwaysOnTop: alwaysOnTop)
@@ -69,7 +88,7 @@ nonisolated struct SpoolerRequest: Codable, Sendable, Equatable {
 
 /// A message from the spooler about a `speak`.
 nonisolated struct SpoolerEvent: Codable, Sendable, Equatable {
-    enum Kind: String, Codable, Sendable { case queued, started, finished, stopped, error }
+    enum Kind: String, Codable, Sendable { case queued, started, finished, stopped, error, presence }
 
     var type: Kind
     var message: String?
@@ -79,9 +98,11 @@ nonisolated struct SpoolerEvent: Codable, Sendable, Equatable {
     static let finished = SpoolerEvent(type: .finished)
     static let stopped = SpoolerEvent(type: .stopped)
     static func error(_ message: String) -> SpoolerEvent { SpoolerEvent(type: .error, message: message) }
+    /// The acknowledgement of a `presence` message.
+    static let presence = SpoolerEvent(type: .presence)
 
     /// The last event of a `speak`.
-    var isFinal: Bool { type != .queued && type != .started }
+    var isFinal: Bool { type != .queued && type != .started && type != .presence }
 }
 
 nonisolated enum SpoolerCodec {
@@ -278,7 +299,7 @@ nonisolated final class SpoolerTracker: Sendable {
 
     func receive(_ event: SpoolerEvent) {
         switch event.type {
-        case .queued:
+        case .queued, .presence:
             break
         case .started:
             startInput.yield(.success(true))

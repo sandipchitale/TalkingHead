@@ -34,7 +34,12 @@ private final class FakePerformer: SpoolPerformer {
     }
 
     func stopCurrent() { stopped = true }
-    func idle(closingFace: Bool) {}
+    func idle(closingFace: Bool) { faceLog.append(closingFace ? "close" : "idle") }
+    func show(presence: Presence) { faceLog.append("\(presence.state.rawValue) \(presence.voice ?? "-")") }
+    func nod() { faceLog.append("nod") }
+
+    /// What the face was told, in order.
+    private(set) var faceLog: [String] = []
 }
 
 private func text(_ words: String, voice: String? = nil) -> SpeechRequest {
@@ -334,5 +339,234 @@ struct OmittedVoiceTests {
         let handle = try await speaker.start(SpeechRequest(source: .text("Hi")))
         #expect(try await handle.finished() == .finished)
         #expect(performer.voices == [nil])
+    }
+}
+
+// MARK: - Presence
+
+struct PresenceProtocolTests {
+    @Test func presenceRoundTrips() throws {
+        let listening = SpoolerRequest.presence(.listening, voice: "female")
+        #expect(String(decoding: SpoolerCodec.encode(listening), as: UTF8.self)
+                == #"{"state":"listening","type":"presence","voice":"female"}"# + "\n")
+        #expect(try SpoolerCodec.decode(SpoolerRequest.self, from: SpoolerCodec.encode(listening).dropLast()) == listening)
+        let nod = SpoolerRequest.presence(.listening, nod: true)
+        #expect(String(decoding: SpoolerCodec.encode(nod), as: UTF8.self)
+                == #"{"pulse":"nod","state":"listening","type":"presence"}"# + "\n")
+        #expect(String(decoding: SpoolerCodec.encode(SpoolerRequest.presence(.none)), as: UTF8.self)
+                == #"{"state":"none","type":"presence"}"# + "\n")
+        #expect(String(decoding: SpoolerCodec.encode(SpoolerEvent.presence), as: UTF8.self) == #"{"type":"presence"}"# + "\n")
+        #expect(!SpoolerEvent.presence.isFinal)
+    }
+
+    @Test func unknownFieldsAreIgnored() throws {
+        let line = Data(#"{"type":"presence","state":"thinking","voice":"male","gesture":"x","future":[1,2]}"#.utf8)
+        #expect(try SpoolerCodec.decode(SpoolerRequest.self, from: line) == SpoolerRequest.presence(.thinking, voice: "male"))
+        let event = try SpoolerCodec.decode(SpoolerEvent.self, from: Data(#"{"type":"finished","extra":true}"#.utf8))
+        #expect(event == .finished)
+    }
+
+    @Test func speakAndStopAreUnchanged() {
+        let speak = SpoolerRequest.speak(SpeechRequest(source: .text("Hi"), voice: "male"), alwaysOnTop: false)
+        #expect(String(decoding: SpoolerCodec.encode(speak), as: UTF8.self)
+                == #"{"alwaysOnTop":false,"text":"Hi","type":"speak","voice":"male"}"# + "\n")
+        #expect(speak.state == nil && speak.pulse == nil)
+    }
+}
+
+struct PresenceRuleTests {
+    private let listening = Presence(state: .listening, voice: "female")
+    private let thinking = Presence(state: .thinking, voice: "male")
+
+    @Test func aConnectionsNewestMessageWins() {
+        var board = PresenceBoard()
+        board.set(owner: 1, listening)
+        board.set(owner: 1, Presence(state: .thinking, voice: "female"))
+        #expect(board.current == Presence(state: .thinking, voice: "female"))
+        board.set(owner: 1, Presence(state: .none))
+        #expect(board.current == nil && board.isEmpty)
+    }
+
+    @Test func closingAConnectionDropsItsPresence() {
+        var board = PresenceBoard()
+        board.set(owner: 1, listening)
+        board.set(owner: 2, thinking)
+        board.drop(owner: 2)
+        #expect(board.current == listening)
+        board.drop(owner: 1)
+        #expect(board.current == nil)
+    }
+
+    @Test func theMostRecentlyUpdatedHolderWins() {
+        var board = PresenceBoard()
+        board.set(owner: 1, listening)
+        board.set(owner: 2, thinking)
+        #expect(board.current == thinking)
+        board.set(owner: 1, listening)  // re-sent: now the most recent
+        #expect(board.current == listening)
+        board.set(owner: 1, Presence(state: .none))
+        #expect(board.current == thinking)
+    }
+
+    @Test func speechOverridesPresence() {
+        #expect(FaceMode.resolve(speaking: true, presence: thinking) == .speaking)
+        #expect(FaceMode.resolve(speaking: false, presence: thinking) == .thinking(voice: "male"))
+        #expect(FaceMode.resolve(speaking: false, presence: listening) == .listening(voice: "female"))
+        #expect(FaceMode.resolve(speaking: false, presence: nil) == .hidden)
+        #expect(FaceMode.resolve(speaking: true, presence: nil) == .speaking)
+    }
+
+    @Test func theFaceClosesOnlyWhenNothingIsQueuedOrHeld() {
+        #expect(FaceMode.shouldClose(queueEmpty: true, presence: nil))
+        #expect(!FaceMode.shouldClose(queueEmpty: false, presence: nil))
+        #expect(!FaceMode.shouldClose(queueEmpty: true, presence: listening))
+        #expect(!FaceMode.shouldClose(queueEmpty: false, presence: thinking))
+    }
+}
+
+@MainActor
+struct PresenceSpoolerTests {
+    @Test func presenceIsShownAndDropped() {
+        let performer = FakePerformer()
+        let spooler = SpeechSpooler(performer: performer)
+        spooler.setPresence(owner: 1, Presence(state: .listening, voice: "female"))
+        spooler.setPresence(owner: 1, Presence(state: .listening, voice: "female"), nod: true)
+        spooler.setPresence(owner: 1, Presence(state: .thinking, voice: "female"))
+        spooler.dropPresence(owner: 1)
+        #expect(performer.faceLog == ["listening female", "listening female", "nod", "thinking female", "idle"])
+    }
+
+    @Test func speechOverridesPresenceAndTheFaceReturnsToIt() async {
+        let performer = FakePerformer(duration: .milliseconds(150))
+        let spooler = SpeechSpooler(performer: performer)
+        spooler.setPresence(owner: 1, Presence(state: .thinking))
+        spooler.submit(text("reply"), owner: 2)
+        // Changed mid-speech: recorded, applied once the speech ends. Nods are for idle faces only.
+        spooler.setPresence(owner: 1, Presence(state: .listening), nod: true)
+        await eventually { performer.log.count == 2 }
+        await eventually { performer.faceLog.count == 2 }
+        #expect(performer.faceLog == ["thinking -", "listening -"])
+        #expect(spooler.currentPresence == Presence(state: .listening))
+    }
+
+    @Test func stopClearsSpeechButNotPresence() async {
+        let performer = FakePerformer(duration: .seconds(5))
+        let spooler = SpeechSpooler(performer: performer)
+        spooler.setPresence(owner: 1, Presence(state: .listening))
+        spooler.submit(text("a"), owner: 2)
+        spooler.submit(text("b"), owner: 3)
+        await eventually { performer.log == ["start a"] }
+        spooler.stopAll(closingFace: true)
+        await eventually { spooler.current == nil }
+        await eventually { performer.faceLog.count == 2 }
+        #expect(spooler.waiting.isEmpty)
+        #expect(spooler.currentPresence == Presence(state: .listening))
+        #expect(performer.faceLog == ["listening -", "listening -"])  // never closed
+    }
+
+    @Test func stopWithoutPresenceStillClosesTheFace() {
+        let performer = FakePerformer()
+        let spooler = SpeechSpooler(performer: performer)
+        spooler.stopAll(closingFace: true)
+        #expect(performer.faceLog == ["close"])
+    }
+}
+
+/// Presence over the socket, as VoiceChat uses it.
+@MainActor
+struct PresenceServerTests {
+    /// Opens a connection and sends `requests`, returning the events received for them.
+    private func send(_ connection: SpoolerConnection, _ requests: SpoolerRequest...) async -> [SpoolerEvent] {
+        for request in requests { connection.send(request) }
+        let count = requests.count
+        return await Task.detached {
+            var events: [SpoolerEvent] = []
+            while events.count < count, let event = connection.nextEvent() { events.append(event) }
+            return events
+        }.value
+    }
+
+    private func serve(_ performer: FakePerformer) throws -> (String, SpeechSpooler, SpoolerServer) {
+        let path = socketPath()
+        let spooler = SpeechSpooler(performer: performer)
+        let server = SpoolerServer(path: path, spooler: spooler)
+        try server.start()
+        return (path, spooler, server)
+    }
+
+    @Test func presenceIsAcknowledgedAndDroppedOnClose() async throws {
+        let performer = FakePerformer()
+        let (path, spooler, server) = try serve(performer)
+        defer { server.stop() }
+
+        let connection = try #require(SpoolerConnection.open(at: path))
+        #expect(await send(connection, .presence(.listening, voice: "female"), .presence(.listening, voice: "female", nod: true))
+                == [.presence, .presence])
+        #expect(spooler.currentPresence == Presence(state: .listening, voice: "female"))
+        #expect(performer.faceLog == ["listening female", "listening female", "nod"])
+
+        connection.close()
+        await eventually { spooler.currentPresence == nil }
+        await eventually { performer.faceLog.last == "idle" }
+        #expect(performer.faceLog.last == "idle")
+    }
+
+    @Test func badPresenceIsRefusedAndOddVoicesIgnored() async throws {
+        let (path, spooler, server) = try serve(FakePerformer())
+        defer { server.stop() }
+        let connection = try #require(SpoolerConnection.open(at: path))
+        defer { connection.close() }
+        let refused = await send(connection, SpoolerRequest(type: .presence, state: "dozing"))
+        #expect(refused.first?.type == .error)
+        #expect(spooler.currentPresence == nil)
+        #expect(await send(connection, SpoolerRequest(type: .presence, voice: "robot", state: "thinking")) == [.presence])
+        #expect(spooler.currentPresence == Presence(state: .thinking))
+    }
+
+    @Test func aSpeechReturnsToThePresenceHeld() async throws {
+        let performer = FakePerformer()
+        let (path, spooler, server) = try serve(performer)
+        defer { server.stop() }
+
+        let presence = try #require(SpoolerConnection.open(at: path))
+        defer { presence.close() }
+        #expect(await send(presence, .presence(.thinking, voice: "male")) == [.presence])
+
+        let speech = try #require(SpoolerConnection.open(at: path))
+        speech.send(.speak(text("reply", voice: "male"), alwaysOnTop: true))
+        let kinds = await Task.detached {
+            var kinds: [SpoolerEvent.Kind] = []
+            while let event = speech.nextEvent() {
+                kinds.append(event.type)
+                if event.isFinal { break }
+            }
+            return kinds
+        }.value
+        #expect(kinds == [.queued, .started, .finished])
+        await eventually { performer.faceLog.count == 2 }
+        #expect(performer.faceLog == ["thinking male", "thinking male"])
+        #expect(spooler.currentPresence == Presence(state: .thinking, voice: "male"))
+    }
+
+    @Test func stopOverTheSocketKeepsPresence() async throws {
+        let performer = FakePerformer(duration: .seconds(5))
+        let (path, spooler, server) = try serve(performer)
+        defer { server.stop() }
+
+        let presence = try #require(SpoolerConnection.open(at: path))
+        defer { presence.close() }
+        #expect(await send(presence, .presence(.listening)) == [.presence])
+        let speech = try #require(SpoolerConnection.open(at: path))
+        defer { speech.close() }
+        speech.send(.speak(text("long"), alwaysOnTop: false))
+        await eventually { performer.log == ["start long"] }
+
+        let stop = try #require(SpoolerConnection.open(at: path))
+        defer { stop.close() }
+        #expect(await send(stop, .stop) == [.stopped])
+        await eventually { spooler.current == nil }
+        await eventually { performer.faceLog.count == 2 }
+        #expect(performer.faceLog == ["listening -", "listening -"])
+        #expect(spooler.currentPresence == Presence(state: .listening))
     }
 }

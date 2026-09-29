@@ -15,10 +15,20 @@ struct FaceView: View {
     var isAnimated = true
     /// Fixes the eyelids at a given openness (0 closed ... 1 open), e.g. for previews.
     var eyeOpenness: Double?
+    /// The presence shown between speeches (see `Presence`), its eased pose, and the last nod.
+    var presence: Presence.State?
+    var pose = PresencePose.neutral
+    var nodStarted: Date?
 
-    /// Driven by `blink()`; the face is only redrawn while a blink is under way or the
+    /// Driven by `blink()`; the face is only redrawn while a blink or a nod is under way or the
     /// mouth or eyebrows change, not every display frame.
     @State private var blinkOpenness = 1.0
+    /// While a nod is under way (see `nod()`).
+    @State private var nodding = false
+
+    /// How long a nod takes, and how far the head dips.
+    static let nodDuration = 0.35
+    static let nodDepth = 3.5
 
     var body: some View {
         let eyeOpen = eyeOpenness ?? blinkOpenness
@@ -26,37 +36,98 @@ struct FaceView: View {
         let portrait = portrait
         let brows = brows
         let expression = expression
+        let pose = pose
+        let nodStarted = nodStarted
+        let face = { (date: Date) in
+            FaceCanvas(portrait: portrait, mouth: mouth, brows: brows, expression: expression, pose: pose,
+                       nod: nodStarted.map { Self.nodOffset(after: date.timeIntervalSince($0)) } ?? 0,
+                       eyeOpen: eyeOpen)
+                .equatable()
+        }
 
+        Group {
+            if nodding {
+                // Redrawn every frame only for the 350 ms of a nod; otherwise only when something changes.
+                TimelineView(.animation) { face($0.date) }
+            } else {
+                face(.now)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 28))
+        .aspectRatio(portrait.size, contentMode: .fit)
+        .accessibilityLabel("Animated talking face")
+        .task(id: isAnimated ? presence == .thinking ? 2 : 1 : 0) {
+            if isAnimated { await blink(thinking: presence == .thinking) }
+        }
+        .task(id: nodStarted) { await nod() }
+    }
+
+    /// Keeps `nodding` set for the length of the nod that started at `nodStarted`.
+    private func nod() async {
+        let remaining = nodStarted.map { Self.nodDuration - Date().timeIntervalSince($0) } ?? 0
+        guard isAnimated, remaining > 0 else {
+            nodding = false
+            return
+        }
+        nodding = true
+        try? await Task.sleep(for: .seconds(remaining))
+        nodding = false
+    }
+
+    /// How far down the head is `elapsed` seconds into a nod: down and back up, once.
+    static func nodOffset(after elapsed: Double) -> Double {
+        guard elapsed >= 0, elapsed < nodDuration else { return 0 }
+        return nodDepth * sin(.pi * elapsed / nodDuration)
+    }
+
+    /// Blinks every 2.5–5.5 s (randomised so it doesn't look mechanical): the lids close and
+    /// open over about 180 ms, in 18 ms steps. While thinking, less often (5–9 s) and slower.
+    private func blink(thinking: Bool) async {
+        let steps = 10
+        let interval = thinking ? 5.0...9.0 : 2.5...5.5
+        let step = thinking ? 28 : 18
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(Double.random(in: interval)))
+            for index in 1...steps {
+                guard !Task.isCancelled else { return }
+                blinkOpenness = abs(Double(index) - Double(steps) / 2) / (Double(steps) / 2)
+                try? await Task.sleep(for: .milliseconds(step))
+            }
+        }
+    }
+}
+
+/// One still frame of the face. Equatable, so that SwiftUI redraws it only when something in it
+/// changes.
+private struct FaceCanvas: View, Equatable {
+    var portrait: Portrait
+    var mouth: MouthShape
+    var brows: Double
+    var expression: FaceExpression
+    var pose: PresencePose
+    var nod: Double
+    var eyeOpen: Double
+
+    static func == (a: Self, b: Self) -> Bool {
+        a.portrait.id == b.portrait.id && a.mouth == b.mouth && a.brows == b.brows && a.expression == b.expression
+            && a.pose == b.pose && a.nod == b.nod && a.eyeOpen == b.eyeOpen
+    }
+
+    var body: some View {
         Canvas { context, size in
             let scale = min(size.width / portrait.size.width, size.height / portrait.size.height)
             context.translateBy(x: (size.width - portrait.size.width * scale) / 2,
                                 y: (size.height - portrait.size.height * scale) / 2)
             context.scaleBy(x: scale, y: scale)
             let bounds = CGRect(origin: .zero, size: portrait.size)
-            context.clip(to: Path(roundedRect: bounds, cornerRadius: 28 / scale))
+            context.clip(to: Path(bounds))
+            if nod != 0 { portrait.apply(nod: nod, to: &context) }
             context.draw(portrait.image, in: bounds)
-            portrait.drawBrows(in: &context, lift: expression.brows + brows, tilt: expression.tilt)
+            portrait.drawBrows(in: &context, lift: expression.brows + brows + pose.brows,
+                               tilt: expression.tilt, asymmetry: pose.browAsymmetry)
             portrait.drawMouth(in: &context, shape: mouth, frown: expression.frown)
+            portrait.lowerLids(in: &context, by: pose.lids)
             portrait.drawEyelids(in: &context, openness: eyeOpen)
-        }
-        .aspectRatio(portrait.size, contentMode: .fit)
-        .accessibilityLabel("Animated talking face")
-        .task(id: isAnimated) {
-            if isAnimated { await blink() }
-        }
-    }
-
-    /// Blinks every 2.5–5.5 s (randomised so it doesn't look mechanical): the lids close and
-    /// open over about 180 ms, in 18 ms steps.
-    private func blink() async {
-        let steps = 10
-        while !Task.isCancelled {
-            try? await Task.sleep(for: .seconds(Double.random(in: 2.5...5.5)))
-            for step in 1...steps {
-                guard !Task.isCancelled else { return }
-                blinkOpenness = abs(Double(step) - Double(steps) / 2) / (Double(steps) / 2)
-                try? await Task.sleep(for: .milliseconds(18))
-            }
         }
     }
 }
@@ -136,6 +207,17 @@ struct Portrait: Identifiable {
     private var skinShadow: Color { Color(red: 0.55, green: 0.36, blue: 0.28) }
     private var lash: Color { Color(red: 0.23, green: 0.15, blue: 0.11) }
 
+    // MARK: Presence
+
+    /// Dips the whole portrait `nod` pixels for a nod, enlarging it just enough that its top edge
+    /// never comes into view; everything drawn after (mouth, eyelids, brows) moves with it.
+    func apply(nod: Double, to context: inout GraphicsContext) {
+        let zoom = 1 + nod / (size.height / 2)
+        context.translateBy(x: size.width / 2, y: size.height / 2 + nod)
+        context.scaleBy(x: zoom, y: zoom)
+        context.translateBy(x: -size.width / 2, y: -size.height / 2)
+    }
+
     // MARK: Eyebrows
 
     /// Moves the eyebrows by redrawing the image over each brow region in narrow columns,
@@ -143,11 +225,12 @@ struct Portrait: Identifiable {
     /// when `lift` is negative, and less toward the ends of the brow), while the forehead above
     /// and the eye below stay put. `tilt` also raises (or, negative, lowers) the inner ends by
     /// up to `tilt` × `browLift` pixels.
-    func drawBrows(in context: inout GraphicsContext, lift: Double, tilt: Double = 0) {
-        guard abs(lift) > 0.01 || abs(tilt) > 0.01 else { return }
-        let lift = min(1.6, max(-1, lift))
+    /// `asymmetry` is added to the first brow's lift and taken from the second's.
+    func drawBrows(in context: inout GraphicsContext, lift: Double, tilt: Double = 0, asymmetry: Double = 0) {
+        guard abs(lift) > 0.01 || abs(tilt) > 0.01 || abs(asymmetry) > 0.01 else { return }
         let column = 2.0
-        for brow in brows {
+        for (index, brow) in brows.enumerated() {
+            let lift = min(1.6, max(-1, lift + (index == 0 ? asymmetry : -asymmetry)))
             var x = brow.minX
             while x < brow.maxX {
                 let middle = x + column / 2
@@ -274,6 +357,30 @@ struct Portrait: Identifiable {
     }
 
     // MARK: Eyelids
+
+    /// Lowers the upper eyelids by `amount` (0 ... 1 of the eye's height) using the portrait's own
+    /// lids and lashes: in narrow columns, the lid is stretched down and the top of the eye below it
+    /// squeezed, fading out toward the corners. (Holding the blink texture half-closed shows a pale
+    /// patch, so it is kept for blinks.)
+    func lowerLids(in context: inout GraphicsContext, by amount: Double) {
+        guard amount > 0.01 else { return }
+        let column = 1.5
+        for r in eyes {
+            let top = r.minY - 3                    // skin just above the lashes stays put
+            let line = r.minY + r.height * 0.15     // the lash line, which moves down
+            let bottom = r.midY + r.height * 0.25   // the lower part of the eye stays put
+            let region = BrowRegion(minX: r.minX - 2, maxX: r.maxX + 2, top: top, line: line, bottom: bottom)
+            var x = region.minX
+            while x < region.maxX {
+                let drop = amount * r.height * 0.6 * region.weight(atX: x + column / 2, taper: 0.35)
+                if drop > 0.05 {
+                    drawSlice(in: &context, x: x, width: column, from: top, line, to: top, line + drop)
+                    drawSlice(in: &context, x: x, width: column, from: line, bottom, to: line + drop, bottom)
+                }
+                x += column
+            }
+        }
+    }
 
     func drawEyelids(in context: inout GraphicsContext, openness: Double) {
         guard openness < 0.98 else { return }

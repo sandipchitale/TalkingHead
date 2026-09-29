@@ -23,7 +23,8 @@ struct FaceWindow: View {
     var body: some View {
         VStack(spacing: 0) {
             FaceView(mouth: speech.mouth, portrait: speech.portrait, brows: speech.brows,
-                     expression: speech.expression)
+                     expression: speech.expression, presence: speech.presence,
+                     pose: speech.presencePose, nodStarted: speech.nodStarted)
                 .padding([.horizontal, .top], 12)
                 .overlay {
                     ClickCatcher(toolTip: "Click to show or hide the speech bubble") { bubble.toggle() }
@@ -37,7 +38,11 @@ struct FaceWindow: View {
         .navigationSubtitle(speech.voiceName(for: speech.portrait) ?? "")
         .background(WindowAccessor { window in
             self.window = window
-            bringToFront(window)
+            if speech.faceRequestActivates {
+                bringToFront(window)
+            } else {
+                window.orderFrontRegardless()
+            }
             bubble.attach(to: window, content: SpeechBubbleView(bubble: bubble).environment(speech))
             applyAlwaysOnTop()
         })

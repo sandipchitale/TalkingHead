@@ -32,13 +32,22 @@ protocol SpoolPerformer: AnyObject {
     func perform(_ job: SpoolJob, started: @escaping () -> Void) async throws -> SpeechEnd
     /// Stops the job being performed.
     func stopCurrent()
-    /// The queue has emptied (after a stop, with `closingFace` if the face should close now).
+    /// The queue has emptied and nobody holds presence (after a stop, with `closingFace` if the
+    /// face should close now).
     func idle(closingFace: Bool)
+    /// Nothing is speaking and someone holds `presence`: show it, opening the face if need be.
+    func show(presence: Presence)
+    /// A one-shot nod, while showing presence.
+    func nod()
 }
 
 /// The one queue for everything the face says: `th` and `th-mcp` (through `SpoolerServer`), the
 /// HTTP MCP server, links, the Services menu, and the app's own typing window, file button and
 /// Play. Speech is spoken in the order it arrives, one at a time.
+///
+/// It also keeps the face's presence (listening, thinking) between speeches, as clients on the
+/// socket ask for it. Presence is never queued: speech overrides it, and the face returns to it
+/// when the queue empties instead of closing.
 final class SpeechSpooler {
     static var shared: SpeechSpooler!
 
@@ -49,6 +58,7 @@ final class SpeechSpooler {
     /// Set when the current job was cancelled, so its end is reported as stopped.
     private var cancelledCurrent = false
     private var nextID = 0
+    private var presence = PresenceBoard()
 
     init(performer: SpoolPerformer) {
         self.performer = performer
@@ -56,6 +66,37 @@ final class SpeechSpooler {
 
     /// Everything waiting, in order (the one speaking isn't included).
     var waiting: [SpoolJob] { queue }
+
+    /// The presence being held, if any (shown whenever nothing is speaking).
+    var currentPresence: Presence? { presence.current }
+
+    // MARK: Presence
+
+    /// Connection `owner`'s newest presence (a `none` state drops it), with an optional nod.
+    func setPresence(owner: Int, _ state: Presence, nod: Bool = false) {
+        presence.set(owner: owner, state)
+        settle()
+        if nod, current == nil, presence.current != nil { performer.nod() }
+    }
+
+    /// Connection `owner` closed: its presence goes with it.
+    func dropPresence(owner: Int) {
+        presence.drop(owner: owner)
+        settle()
+    }
+
+    /// With nothing speaking, shows the presence being held, or lets the face go. While speech is
+    /// under way nothing changes: the face never switches in the middle of a speech.
+    private func settle(closingFace: Bool = false) {
+        guard current == nil, queue.isEmpty else { return }
+        if let shown = presence.current {
+            performer.show(presence: shown)
+        } else {
+            performer.idle(closingFace: closingFace)
+        }
+    }
+
+    // MARK: Speech
 
     @discardableResult
     func submit(_ request: SpeechRequest, owner: Int? = nil, alwaysOnTop: Bool = false, closesFace: Bool = false,
@@ -86,16 +127,18 @@ final class SpeechSpooler {
         if current?.owner == owner { stopCurrent() }
     }
 
-    /// Silence: stops the current speech and clears the whole queue, whoever queued it.
+    /// Silence: stops the current speech and clears the whole queue, whoever queued it. Presence
+    /// isn't speech, so it stays, and the face returns to it.
     func stopAll(closingFace: Bool = false) {
         let dropped = queue
         queue.removeAll()
         for job in dropped { job.onEvent(.stopped) }
         if current != nil {
             stopCurrent()
-        }
-        if closingFace || current == nil {
-            performer.idle(closingFace: closingFace)
+            // The speech's end settles the face; with nobody holding presence, close it now.
+            if closingFace, presence.current == nil { performer.idle(closingFace: true) }
+        } else {
+            settle(closingFace: closingFace)
         }
     }
 
@@ -124,9 +167,7 @@ final class SpeechSpooler {
         }
         current = nil
         running = nil
-        if queue.isEmpty {
-            performer.idle(closingFace: false)
-        }
+        settle()
         startNext()
     }
 }
@@ -183,7 +224,9 @@ final class FacePerformer: SpoolPerformer {
         guard let generation = speech.speak(text, mood: job.request.mood.flatMap(Mood.init(name:)), voice: voice) else {
             throw SpeechFailure("Nothing to speak: the text has no words to say.")
         }
-        speech.requestFace()
+        // A face already showing (for presence, say) isn't brought forward: that would take the
+        // keyboard from whoever is typing.
+        speech.requestFace(activating: Self.faceWindow == nil)
         started()
         return await speech.end(of: generation)
     }
@@ -192,8 +235,25 @@ final class FacePerformer: SpoolPerformer {
         speech.stop()
     }
 
+    func show(presence: Presence) {
+        closing?.cancel()
+        if Self.faceWindow == nil {
+            openedFace = true
+            // Opened quietly: presence follows someone composing elsewhere, so the face must not
+            // take the keyboard.
+            speech.requestFace(activating: false)
+        }
+        settings.keepsOnTopForSpeech = true
+        speech.show(presence: presence.state, voice: presence.voice.map(SpeechEngine.portraitID(forVoice:)))
+    }
+
+    func nod() {
+        speech.nod()
+    }
+
     func idle(closingFace: Bool) {
         settings.keepsOnTopForSpeech = false
+        speech.show(presence: nil, voice: nil)
         closing?.cancel()
         if closingFace {
             Self.faceWindow?.close()
@@ -307,8 +367,11 @@ nonisolated final class SpoolerServer: @unchecked Sendable {
         }
         source.setCancelHandler { [weak self] in
             Darwin.close(fd)
-            // The caller went away: its speech goes with it.
-            Task { @MainActor in self?.spooler.cancelAll(owner: client) }
+            // The caller went away: its speech and its presence go with it.
+            Task { @MainActor in
+                self?.spooler.cancelAll(owner: client)
+                self?.spooler.dropPresence(owner: client)
+            }
         }
         source.resume()
     }
@@ -327,6 +390,14 @@ nonisolated final class SpoolerServer: @unchecked Sendable {
             case .stop:
                 spooler.stopAll(closingFace: true)
                 send(.stopped)
+            case .presence:
+                guard let state = message.state.flatMap(Presence.State.init(rawValue:)) else {
+                    send(.error("Unknown presence state \(message.state ?? "(none)"); use listening, thinking or none."))
+                    return
+                }
+                let voice = message.voice.flatMap { SpeechRequest.voices.contains($0) ? $0 : nil }
+                spooler.setPresence(owner: client, Presence(state: state, voice: voice), nod: message.pulse == "nod")
+                send(.presence)
             case .speak:
                 do {
                     let request = try message.speechRequest()

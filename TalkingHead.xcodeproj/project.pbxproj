@@ -23,6 +23,7 @@
 		428AEF42827CA9F6E7C60CCA /* MCPServerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD5EE2246C526CDA7B785D6 /* MCPServerController.swift */; };
 		4564FEBC7BC74AC9CCA2CD80 /* Speaking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35724361BFDF41A1B3F0A6EF /* Speaking.swift */; };
 		457F5CC4C6010C6284A82223 /* SpeechEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 517FA019FCFDD641E4154634 /* SpeechEngine.swift */; };
+		513550CD4E9FE123237537F7 /* Presence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D168339FCEC1D043B1E55AF /* Presence.swift */; };
 		5222BB2BAE99568CFD743EBF /* THProcessSpeaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5E3F61CE8DFD7802C4D87A /* THProcessSpeaker.swift */; };
 		5495783A612861A03B135895 /* TalkingHeadTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DFAF15E39C638DDC5E1E646 /* TalkingHeadTools.swift */; };
 		586CD27F801D4FAE483C11D8 /* FaceWindowSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B01B6ABF39DDC16FBAF13EC /* FaceWindowSettings.swift */; };
@@ -44,6 +45,7 @@
 		B6BDA1464BC1FEF240CB077C /* WebPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4D7E298D16DAE29A7609EE /* WebPage.swift */; };
 		C750D9DAD97CFDABA987FD0F /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CB10B07C9E62347E7EF793A /* main.swift */; };
 		C7B8E401E07998D97E7DDCCB /* SpokenTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23A8F9FF61CE9D1287CD0904 /* SpokenTextView.swift */; };
+		C7CFC69860F0DA7BD40158FD /* Presence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D168339FCEC1D043B1E55AF /* Presence.swift */; };
 		CB5654CC42015A26E662E7BC /* TextFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 125190569898D818A70DBA13 /* TextFragment.swift */; };
 		CC26C42A8653F8E3CFF2A794 /* FaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0D88DA2C1C4406B3FC9F77 /* FaceView.swift */; };
 		CF01192DA5DADA247C0ECB1B /* Speaking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35724361BFDF41A1B3F0A6EF /* Speaking.swift */; };
@@ -98,6 +100,7 @@
 		09C1929CC2D386392F17190B /* th */ = {isa = PBXFileReference; path = th; sourceTree = "<group>"; };
 		0B2696B0C29356F17731412A /* TalkingHeadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TalkingHeadTests.swift; sourceTree = "<group>"; };
 		0BB97926F51A1DA314704CFC /* MCPHTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPHTTPServer.swift; sourceTree = "<group>"; };
+		0D168339FCEC1D043B1E55AF /* Presence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Presence.swift; sourceTree = "<group>"; };
 		0E7D48BA07B3A81B1C5285DD /* TalkingHeadTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TalkingHeadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1062330AF862223DE617366A /* Mood.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mood.swift; sourceTree = "<group>"; };
 		125190569898D818A70DBA13 /* TextFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFragment.swift; sourceTree = "<group>"; };
@@ -171,6 +174,7 @@
 		93CA6182EC55FD9B2B079778 /* MCPTools */ = {
 			isa = PBXGroup;
 			children = (
+				0D168339FCEC1D043B1E55AF /* Presence.swift */,
 				35724361BFDF41A1B3F0A6EF /* Speaking.swift */,
 				9796B5404F91C867CE2F50EE /* Spooler.swift */,
 				3DFAF15E39C638DDC5E1E646 /* TalkingHeadTools.swift */,
@@ -405,6 +409,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C7CFC69860F0DA7BD40158FD /* Presence.swift in Sources */,
 				4564FEBC7BC74AC9CCA2CD80 /* Speaking.swift in Sources */,
 				3B2C2E5AE59EEBBA30EBC4FB /* Spooler.swift in Sources */,
 				5222BB2BAE99568CFD743EBF /* THProcessSpeaker.swift in Sources */,
@@ -430,6 +435,7 @@
 				068FBC7C3BF264D306ACB1FF /* MCPHTTPServer.swift in Sources */,
 				428AEF42827CA9F6E7C60CCA /* MCPServerController.swift in Sources */,
 				74E401CC7A727C6963DD90D2 /* Mood.swift in Sources */,
+				513550CD4E9FE123237537F7 /* Presence.swift in Sources */,
 				86053F5EC0B74DC828E08E4C /* Prosody.swift in Sources */,
 				CF01192DA5DADA247C0ECB1B /* Speaking.swift in Sources */,
 				B625FBCF305A0D47250571DC /* SpeechBubble.swift in Sources */,

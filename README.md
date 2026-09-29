@@ -1,29 +1,22 @@
 # Talking Head
 
-A macOS menu bar applet and `th` command-line tool that reads text aloud with Apple's built-in speech
-engine while an animated portrait lip-syncs to it.
+A macOS menu bar app and `th` command that reads text aloud with Apple's built-in voices while an
+animated portrait lip-syncs to it. Anything on your Mac can make it speak: the terminal, other apps,
+links, AI agents over MCP, and [VoiceChat](https://github.com/sandipchitale/VoiceChat).
 
-- **Two characters:** a man (Daniel's voice) and a woman (Samantha's voice).
-- **Lip sync:** the mouth follows the audio actually playing, using 12 cartoon mouth shapes derived from
-  the spelling of each word. Loudness scales how far it opens.
-- **Blinking:** the eyelids blink every few seconds.
-- **Eyebrows:** the eyebrows lift on the words the voice stresses (found from its pitch), on words in
-  capitals, and highest at the end of a question or exclamation. They dip slightly on negative or
-  doubtful words ("not", "never", "but", "sorry"…).
-- **Moods:** the face can look happy, sad, surprised, concerned or angry, through its eyebrows and a
-  closed mouth that turns down. With no hint, the text suggests the mood: emoji and emoticons (😊,
-  😟, `:(`…) and feeling words ("congratulations", "unfortunately", "warning"…) set it for their
-  sentence, and are not read out. Any caller can also say which mood to show:
-  - `th --mood concerned "Build failed"`, or `mood=` in a `talkinghead://` link, for all of the text;
-  - `[mood]` cues in the text, such as `[happy] Good news! [sad] But I'm leaving.`, from that point on.
-    `[neutral]` ends one. Cues also work in the typing window and with the Services menu.
-- **Speech bubble:** a bubble beside the head shows the text, highlights the word being spoken, and
-  scrolls to follow it. Click the head to show or hide it.
-- **Controls:** play/pause, type text, or pick a file to speak, from buttons below the head or from the
-  menu bar.
-- **From other apps:** select text (an email in Mail, a paragraph in Safari…) and choose **Services →
-  Speak with Talking Head**, or open a `talkinghead://` link. Web links are read too, and a link to a
-  highlight (`#:~:text=…`) reads just the highlighted passage.
+- **Two faces:** a man (Daniel's voice) and a woman (Samantha's), each able to use any installed
+  English voice of its gender.
+- **Lip sync** to the audio actually playing, with 12 cartoon mouth shapes taken from each word's
+  spelling.
+- **A lively face:** blinks; eyebrows that lift on stressed words (found from the voice's pitch), on
+  capitals, and highest before "?" or "!", and dip on doubtful words ("not", "but", "sorry"…).
+- **Moods:** happy, sad, surprised, concerned or angry. Emoji and feeling words suggest the mood of
+  each sentence, or a caller sets it: `th --mood concerned "Build failed"`, or `[happy]` cues in the
+  text.
+- **Listening and thinking:** between speeches, a client such as VoiceChat can have the face listen
+  (brows up, a nod per phrase) or think (one brow up, eyes lowered, "···" in the bubble).
+- **Speech bubble:** click the head to show the text, with the spoken word highlighted.
+- **One queue:** everyone's speech is spoken in turn by one face.
 
 ![Daniel](screenshots/Daniel.png) 
 
@@ -33,317 +26,154 @@ https://github.com/user-attachments/assets/fa5e0d48-b055-455c-b689-b5dfc53b3d40
 
 https://github.com/user-attachments/assets/e3388cf4-3ee7-45cc-b270-c060d18efc0e
 
-**Feature tour:** [sandipchitale.github.io/TalkingHead](https://sandipchitale.github.io/TalkingHead/) is a
-page where every feature has a 🔊 **Explain** link that makes Talking Head explain it out loud. The links
-need Talking Head installed. On the live page, **📖 Read this card** also shows Talking Head reading a
-passage straight from the page. The page shows how to add such links to your own pages, and its
-source is [`docs/index.html`](docs/index.html).
-
-## Requirements
-
-- macOS 26 (Tahoe) or later
-- Xcode 26 or later (Swift 6)
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen), only if you change `project.yml`
-  (`brew install xcodegen`)
-
-**Better voices (recommended).** macOS ships compact versions of Daniel and Samantha. For a much more
-natural sound, download **Daniel (Enhanced)** and **Samantha (Enhanced)** (free): System Settings →
-Accessibility → **Read & Speak**, click the ⓘ next to Speak selection, choose **English**, click
-**Voice**, and download them. Talking Head uses the best installed quality of each voice on its own.
-
-## Build
-
-```sh
-xcodebuild -project TalkingHead.xcodeproj -scheme TalkingHead -configuration Debug \
-  -derivedDataPath build build
-```
-
-The app is built to `build/Build/Products/Debug/TalkingHead.app`. You can also open
-`TalkingHead.xcodeproj` in Xcode and run it.
-
-Run the unit tests (mouth-shape rules and `th` argument parsing):
-
-```sh
-xcodebuild -project TalkingHead.xcodeproj -scheme TalkingHead -derivedDataPath build test
-```
-
-`project.yml` is the source of truth for the Xcode project. After changing it, run
-`xcodegen generate` and commit both files.
+**Feature tour:** [sandipchitale.github.io/TalkingHead](https://sandipchitale.github.io/TalkingHead/) has
+a 🔊 **Explain** link for every feature, which makes Talking Head explain it out loud (with Talking Head
+installed). Its source, [`docs/index.html`](docs/index.html), shows how to add such links to your pages.
 
 ## Install
 
+Download the latest [release](https://github.com/sandipchitale/TalkingHead/releases), unzip it, and move
+`TalkingHead.app` to `/Applications`. It isn't notarized, so clear the quarantine flag once:
+
 ```sh
-cp -R build/Build/Products/Debug/TalkingHead.app /Applications/
-ln -sf /Applications/TalkingHead.app/Contents/MacOS/th /usr/local/bin/th
+xattr -dr com.apple.quarantine /Applications/TalkingHead.app
+ln -sf /Applications/TalkingHead.app/Contents/MacOS/th ~/.local/bin/th   # optional: th on your PATH
 open /Applications/TalkingHead.app
 ```
 
-To keep it in the menu bar all the time, turn on **Launch at Login** in its menu. On macOS Tahoe,
-also check that it's allowed in System Settings → Menu Bar.
+Turn on **Launch at Login** in its menu to keep it in the menu bar (on macOS Tahoe, also allow it in
+System Settings → Menu Bar). Requires macOS 26 (Tahoe) or later.
 
-## Menu bar applet
+**Better voices (recommended):** System Settings → Accessibility → **Read & Speak** → ⓘ next to Speak
+selection → **English** → **Voice**, and download Daniel and Samantha (Enhanced), or Premium voices such
+as Ava or Zoe. Talking Head uses the best installed quality on its own.
 
-Launched from Finder or at login, Talking Head runs only in the menu bar: no Dock icon and no app menu.
-Its menu starts with a heading, **Talking Head** and its version (e.g. "Talking Head 0.0.8"), then offers:
+## Build
 
-- **Show Talking Head** opens the face window.
-- **Type Text to Speak…** opens a window with a text box and a Speak button (⌘⏎).
-- **Play/Pause** and **Stop**.
-- **Voice:** Man or Woman: which face speaks, shown with the voice it uses, e.g. "Woman (Ava)".
-- **Man's Voice** and **Woman's Voice:** the voice each face speaks with: its own (Daniel or Samantha,
-  at the best quality installed) or an installed English voice of the same gender, best quality first,
-  such as a downloaded Premium voice like Ava or Zoe. Voices macOS doesn't label as male or female
-  aren't offered. Remembered, and used everywhere that face speaks: the app,
-  `th`, links, VoiceChat and MCP.
-- **Speed:** Slower, Normal or Faster (applies from the next text spoken).
-- **Always on Top:** keeps the talking head (and its bubble) above other windows. Remembered between
-  launches.
-- **Launch at Login.**
-- **MCP Server (port 8766):** serves the MCP tools over HTTP on this Mac only (see
-  [MCP server](#mcp-server)). Off by default; remembered between launches.
-- **MCP Server Config…:** a window with ready-made client configuration for both transports: a JSON
-  tab to copy into a file such as `.mcp.json`, and a Shell tab with a `claude`, `agy` or `codex`
-  command per host and transport, each with its own copy button. **Save…** writes the tab to a file.
-- **Quit.**
+Needs Xcode 26 (Swift 6), and [XcodeGen](https://github.com/yonaskolb/XcodeGen) if you change
+`project.yml` (the source of truth for the Xcode project; run `xcodegen generate` and commit both).
 
-## Face window
+```sh
+xcodebuild -project TalkingHead.xcodeproj -scheme TalkingHead -configuration Release -derivedDataPath build build
+xcodebuild -project TalkingHead.xcodeproj -scheme TalkingHead -derivedDataPath build test
+cp -R build/Build/Products/Release/TalkingHead.app /Applications/
+```
 
-- The title is the face, **Man** or **Woman**, with the voice speaking for it as a subtitle.
-- Click the head to show or hide the speech bubble. It starts hidden, and moves and resizes with the
-  window.
-- The toolbar below the head has four buttons:
-  - play/pause (Space). When nothing is playing, it replays the last text.
-  - **Type text to speak** opens the typing window.
-  - **Select a file to speak** picks a text file (plain text, RTF, HTML, …).
-  - **Pin/unpin** keeps the window above other windows (same as **Always on Top** in the menu).
+## Using it
 
-## Command line: `th`
+**Menu bar.** Show Talking Head, Type Text to Speak… (⌘⏎ speaks), Play/Pause, Stop, **Voice** (which
+face speaks), **Man's Voice** and **Woman's Voice** (the voice each face uses), Speed, Always on Top,
+Launch at Login, **MCP Server (port 8766)**, **MCP Server Config…**, and Quit. Choices are remembered.
+
+**Face window.** Titled **Man** or **Woman**, with the voice as subtitle. Click the head for the speech
+bubble. Below the head: play/pause (Space; replays the last text when idle), type text, pick a file,
+and pin (always on top).
+
+**Command line.**
 
 ```
 th [-v|--voice male|female] [-m|--mood MOOD] [-t|--tty] [-f|--file path] [-u|--url URL] [--always-on-top] [text ...]
 ```
 
-| Invocation | Result |
+| Example | Result |
 |---|---|
-| `th Build finished` | Speaks the arguments as text, then quits |
-| `th -f notes.txt` | Speaks the file (plain text, RTF, HTML, Word…), then quits |
-| `echo "Hello" \| th`, `th < notes.txt` | Speaks piped standard input, then quits |
-| `th -t` | Reads text typed at the terminal (end with Control-D), speaks it, then quits |
-| `th` at a terminal | Shows the talking head only; use its toolbar to type text or pick a file |
-| `th -v female …` | Uses Samantha instead of Daniel (the default, `male`) |
-| `th --mood concerned "Build failed"` | Shows a mood: `neutral`, `happy`, `sad`, `surprised`, `concerned` or `angry` |
-| `th --always-on-top …` | Keeps the talking head above other windows for this run |
-| `th -- -5 degrees` | `--` ends the options, so text can start with `-` |
-| `th -u 'https://example.com/#:~:text=This%20domain'` | Speaks the web page, or just the passage its text fragment highlights |
+| `th Build finished` | Speaks the text, then quits |
+| `th -f notes.txt` · `echo Hi \| th` · `th -t` | Speaks a file (text, RTF, HTML, Word…), piped input, or what you type (end with Control-D) |
+| `th -v female --mood happy …` | The woman's face, looking happy (moods: `neutral`, `happy`, `sad`, `surprised`, `concerned`, `angry`) |
+| `th -u 'https://example.com/#:~:text=This%20domain'` | Speaks a web page, or just the passage its text fragment highlights |
+| `th -- -5 degrees` | `--` ends the options |
+| `th` at a terminal | Just shows the face |
 
-`th` quits when you close its windows, so the terminal gets its prompt back. If you use the typing
-window or file picker, it stays open after speaking. `th --help` prints usage. Errors print a message
-and exit with status 2.
+In zsh, quote text containing `?` or `*`, or add `alias th='noglob th'`. Errors print a message and
+exit with status 2. When the menu bar app is running, `th` hands its speech to the app's queue and
+waits for it to finish; Control-C takes back only its own speech.
 
-**When the menu bar app is running,** `th` hands its speech to it instead of showing a face of its
-own: the speech waits its turn behind anything already queued and is spoken by the app's face. `th`
-still waits until its speech has finished and exits the same way (0 when done, 2 with a `th: …`
-message on error). Killing it (Control-C, `kill`) takes back only its own speech: dropped if it was
-waiting, stopped if it was speaking.
-
-## Speaking from other apps
-
-**Services menu.** Select text in any app (for an email in Mail, click in the message and press ⌘A), then
-right-click → **Services → Speak with Talking Head** (also in the app menu → Services). If the
-selection is a single web link, Talking Head reads that page instead. The face window opens and
-starts speaking.
-
-The app needs to be in `/Applications` (or launched once) for macOS to list the service. If it doesn't
-appear, check System Settings → Keyboard → Keyboard Shortcuts → Services → Text, where you can also give
-it a keyboard shortcut.
-
-**Links.** `talkinghead://` URLs work from Shortcuts, scripts, notes, or a browser's address bar:
-
-| URL | Result |
-|---|---|
-| `talkinghead://speak?text=Hello%20there` | Speaks the text |
-| `talkinghead://speak?url=<percent-encoded URL>` | Speaks the page, or its highlighted passage |
-| add `&voice=female` or `&voice=male` | Picks the voice (when nothing is playing) |
-| add `&mood=happy` (or another mood) | Shows that mood; an unknown mood is ignored |
-
-For example, from Terminal: `open "talkinghead://speak?text=Build%20finished&voice=female"`.
-
-**Text fragments.** Links made with Safari's **Copy Link to Highlight** (and Chrome's **Copy link to
-highlight**) end in `#:~:text=…`. Talking Head downloads the page, extracts its text, and finds the
-passage using the text-fragment rules: `start`, `start,end`, and the optional `prefix-,` and `,-suffix`
-context. Matching ignores case and differences in whitespace. Pages that build their text with
-JavaScript may have little or no text to read.
+**From other apps.**
+- **Services menu:** select text anywhere, then right-click → **Services → Speak with Talking Head**. A
+  selected web link reads that page.
+- **Links:** `talkinghead://speak?text=Hello` or `talkinghead://speak?url=<encoded URL>`, with optional
+  `&voice=female` and `&mood=happy`. Try `open "talkinghead://speak?text=Build%20finished"`.
+- **Text fragments:** a link from Safari's **Copy Link to Highlight** (`#:~:text=…`) reads just the
+  highlighted passage. Pages built by JavaScript may have little text to read.
 
 ## MCP server
 
-Talking Head is also an [MCP](https://modelcontextprotocol.io) server, so an AI agent can speak with
-its face. There are two ways to connect, both with the same tools:
+AI agents can speak with the face through [MCP](https://modelcontextprotocol.io). **MCP Server Config…**
+in the menu has ready-to-copy configuration for Claude Code, Codex, Antigravity and `.mcp.json`.
 
-**Standard I/O (`th-mcp`).** The host starts `th-mcp`, which is inside the app. Point the host at it,
-for example in `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "talkinghead": {
-      "type": "stdio",
-      "command": "/Applications/TalkingHead.app/Contents/MacOS/th-mcp"
-    }
-  }
-}
-```
-
-Or, in Claude Code: `claude mcp add talkinghead -- /Applications/TalkingHead.app/Contents/MacOS/th-mcp`.
-**MCP Server Config…** in the menu has these entries, and the commands for other hosts, ready to copy.
-`th-mcp` hands its speech to the menu bar app when that is running, and otherwise runs the `th`
-beside it, so it works either way.
-
-**Streamable HTTP (menu bar app).** Turn on **MCP Server (port 8766)** in the menu, or launch the app
-with `TALKINGHEAD_MCP_HTTP_PORT` set to start it on that port. It listens on `127.0.0.1` only:
-
-```json
-{
-  "mcpServers": {
-    "talkinghead": {
-      "type": "streamable-http",
-      "url": "http://localhost:8766/mcp"
-    }
-  }
-}
-```
-
-Any local user account on the Mac can reach a localhost port, which is why this server is off until
-you turn it on.
-
-**Tools**
+- **stdio:** `claude mcp add talkinghead -- /Applications/TalkingHead.app/Contents/MacOS/th-mcp`. It
+  uses the menu bar app when it's running, and `th` otherwise.
+- **HTTP:** turn on **MCP Server (port 8766)** (or set `TALKINGHEAD_MCP_HTTP_PORT`), then use
+  `http://localhost:8766/mcp`. It listens on `127.0.0.1` only, and is off by default because any local
+  account can reach a localhost port. Web apps (claude.ai, chatgpt.com) can't reach it.
 
 | Tool | Arguments | What it does |
 |---|---|---|
-| `speak` | `text` (required; may contain `[mood]` cues), `voice` (`male`/`female`), `mood`, `wait` (default `true`) | Speaks the text with the face, kept above other windows |
-| `speak_url` | `url` (http/https, may end in `#:~:text=…`), `voice`, `mood`, `wait` | Reads the page, or just the highlighted passage, as `th -u` does |
-| `stop` | none | Stops the speech, drops anything waiting, and closes the face |
+| `speak` | `text` (may contain `[mood]` cues), `voice`, `mood`, `wait` (default `true`) | Speaks with the face, above other windows |
+| `speak_url` | `url` (may end in `#:~:text=…`), `voice`, `mood`, `wait` | Reads a page or its highlighted passage |
+| `stop` | none | Stops speaking, drops anything waiting, closes the face |
 
-With `wait`, a call returns when the speech has finished; without it, as soon as it starts. Either way
-a call blocks for at most 45 seconds (`TALKINGHEAD_MCP_WAIT_MS`): if the speech is still going, or still
-waiting its turn, the call returns a normal result saying so ("Still speaking. It will finish on its
-own; don't call again to repeat it.") and the speech carries on. While a call waits, it sends a progress
-notification every 5 seconds when the client asks for them, so the client's own timeout doesn't run
-out. (Over HTTP, the SDK sends these on the session's GET event stream.)
+A call returns when the speech finishes (or starts, with `wait: false`), but never blocks more than 45
+seconds (`TALKINGHEAD_MCP_WAIT_MS`); after that it says the speech is still going, and it carries on.
+Waiting calls send progress every 5 seconds. Leaving out `voice` uses the menu's face. Errors come back
+as plain sentences.
 
-**Taking turns.** While the menu bar app is running, it owns the face and speaks everything from one
-queue, in the order it arrives: every `th-mcp` process (each agent session starts its own), the HTTP
-server, `th` (including VoiceChat's), links, the Services menu, and the app's own typing window. So
-two agents announcing at once are spoken one after the other, by one face. Without the menu bar app,
-each `th-mcp` process takes turns only with itself. `stop`, like **Stop** in the menu, means silence:
-it ends the current speech and clears the whole queue, whoever queued it.
-
-Leaving out `voice` uses the voice chosen in the menu bar app's menu (remembered between launches),
-whether or not the app is running.
-Problems (a page that can't be read, a passage that isn't on the page, an unknown mood) come back as
-tool errors with a plain sentence the agent can pass on.
-
-**How agents use it**
-
-- **Announcing when long tasks finish.** Add a line like this to `CLAUDE.md` or `AGENTS.md`:
-  `When a build, test run or other task takes more than a minute, announce the result with the
-  talkinghead speak tool: one or two sentences, with mood happy if it passed and concerned if it failed.`
-- **Narrated walkthroughs.** Ask the agent to walk you through some code out loud: it calls `speak`
-  (with `wait` left on) once per step, so each explanation finishes before it moves on to the next.
-- **Reading a page in its own words.** `speak_url` with a text fragment reads a passage exactly as
-  written, such as a changelog entry or a paragraph of documentation, instead of the agent's summary.
-
-**Web apps can't use it.** claude.ai, chatgpt.com and other web apps connect to MCP servers from their
-own servers, not from your Mac, so they can't reach a localhost server. They would need a public HTTPS
-tunnel with authentication in front of it, which Talking Head doesn't provide.
+A handy instruction for `CLAUDE.md` or `AGENTS.md`: *"When a task takes more than a minute, announce
+the result with the talkinghead speak tool, in one or two sentences, with mood happy if it passed and
+concerned if it failed."*
 
 ## How it works
 
-- **Speech:** `AVSpeechSynthesizer.write(_:toBufferCallback:)` renders the speech into audio buffers.
-  The app plays them itself through `AVAudioEngine`, so it always knows which audio frame is audible.
-  Pause and resume pause the player node, and the face freezes with it.
-- **Timing:** while rendering, the app records a loudness envelope (RMS per 256 frames) and the frame
-  at which each word starts. The synthesizer's word callbacks arrive in step with rendering.
-- **Mouth shapes:** each word's spelling becomes a sequence of mouth shapes (visemes), such as
-  "friend" → F, R, EE, N. The shapes share the time the word is actually voiced, vowels are held
-  longer, and silence shows a resting mouth. The shape is parametric (width, lips, teeth, tongue,
-  roundness), so it morphs smoothly between visemes.
-- **Stress:** as the speech is rendered, the app estimates its pitch every 256 frames
-  (autocorrelation over 1024 samples). A word counts as stressed when its pitch rises above the
-  speaker's median by a good share of that speaker's usual rise, so a lively voice (Daniel) and a
-  flatter one (Samantha) move their eyebrows about as often. The audio is rendered ahead of playback,
-  so each word's pitch is known before it is heard.
-- **Eyebrows:** the brows are moved without extra artwork: narrow columns of the image over each brow
-  are redrawn stretched, squeezing the forehead and stretching the skin above the eye (or the
-  reverse). A tilt moves the inner ends more than the outer ones.
-- **Moods:** `Script` takes the cues and mood emoji out of the text and works out the mood at each
-  point: a `[mood]` cue, else the mood given for the whole text, else its sentence's guess. The face
-  eases from one mood to the next.
-- **Portraits:** each portrait is an image plus two textures generated from it: a mouthless skin patch
-  that fades in when the mouth opens, and skin for the eyelids. The portrait's own smile shows when
-  the mouth is closed, unless a mood turns the mouth down.
-- **`th`:** `th` is a shell script inside the app bundle (`Contents/MacOS/th`). It runs the app
-  executable with the arguments packed into one `-THArguments` value, because AppKit would treat
-  bare arguments such as file names as documents to open.
-- **One queue (the speech spooler):** the menu bar app keeps a single first-in, first-out queue for
-  everything the face says, and listens on a Unix domain socket,
-  `~/Library/Application Support/TalkingHead/speech.sock` (0600, in a 0700 folder), with a tiny
-  newline-delimited JSON protocol: `speak` {`text` or `url`, `voice`, `mood`, `alwaysOnTop`} and
-  `stop`, answered with `queued`, `started`, `finished`, `stopped` or `error` {`message`}. Before its
-  own window starts, a `th` run with something to say connects to the socket; if the app answers, `th`
-  sends its speech and waits for the result instead of showing a face. `th-mcp` does the same for each
-  call. A caller whose connection closes has its queued speech dropped, and its speech stopped if it is
-  speaking.
+- **Speech and timing:** `AVSpeechSynthesizer` renders audio buffers, which the app plays through
+  `AVAudioEngine`, so it knows exactly what is audible. While rendering, it records loudness, each
+  word's start, and the pitch (autocorrelation every 256 frames), ahead of playback.
+- **Mouth:** each word's spelling becomes mouth shapes ("friend" → F, R, EE, N), spread over the time
+  the word is voiced; the parametric shape morphs between them.
+- **Eyebrows and lids:** narrow columns of the portrait over each brow (or eyelid) are redrawn
+  stretched, so no extra artwork is needed. A word is stressed when its pitch rises well above the
+  speaker's median, relative to how far that voice usually rises.
+- **Moods:** `Script` removes cues and mood emoji and works out the mood at each point: a cue, else
+  the mood given for the whole text, else the sentence's guess.
+- **One queue (the speech spooler):** the menu bar app speaks everything from one first-in, first-out
+  queue, and serves a Unix socket at `~/Library/Application Support/TalkingHead/speech.sock` (0600, in
+  a 0700 folder, same user only). The protocol is newline-delimited JSON:
+  - `{"type":"speak","text"|"url":…,"voice"?,"mood"?,"alwaysOnTop"?}` → `queued`, `started`, then
+    `finished`, `stopped` or `error` `{message}`. Closing the connection takes that speech back.
+  - `{"type":"stop"}` → `stopped`: silences everyone's speech.
+  - `{"type":"presence","state":"listening"|"thinking"|"none","voice"?,"pulse":"nod"?}` →
+    `{"type":"presence"}`: what the face shows between speeches. It's held per connection (the newest
+    message wins; `none` or closing drops it), the most recently updated holder is shown, speech
+    overrides it, and Stop doesn't clear it. The face opens without taking the keyboard and closes only
+    when nothing is queued and nobody holds presence. An older Talking Head answers `error`.
+- **`th`** is a script in the app bundle that runs the app with its arguments packed into one
+  `-THArguments` value (AppKit would treat bare arguments as documents to open). It first offers its
+  speech to the spooler.
 
 ## Source layout
 
 | Path | Purpose |
 |---|---|
-| `TalkingHead/TalkingHeadApp.swift` | App entry: menu bar item, windows, login item |
-| `TalkingHead/LaunchOptions.swift` | Command-line parsing (`th` arguments) |
-| `TalkingHead/SpeechEngine.swift` | Observable speech state, mouth shape, current word |
-| `TalkingHead/AudioPipeline.swift` | Synthesis to buffers, playback, loudness, pitch and word timeline |
-| `TalkingHead/Prosody.swift` | Pitch tracking, and how much the voice stresses each word |
-| `TalkingHead/Mood.swift` | Moods, how the face shows them, and `Script`: cues, emoji and guessed moods |
-| `TalkingHead/Expression.swift` | When the eyebrows move, and where each portrait's brows are |
-| `TalkingHead/Viseme.swift` | Spelling → mouth shapes, parametric `MouthShape` |
-| `TalkingHead/FaceView.swift` | Portrait rendering: animated mouth and eyelids; `Portrait` data |
-| `TalkingHead/FaceWindow.swift` | Face window and its toolbar |
-| `TalkingHead/SpeechBubble.swift` | Speech bubble child window and shape |
-| `TalkingHead/SpokenTextView.swift` | Word-wrapped text with the moving highlight |
-| `TalkingHead/InputWindow.swift` | Typing window |
-| `TalkingHead/TextFile.swift` | Reads the text of a file (used by `th` and the file button) |
-| `TalkingHead/ExternalRequests.swift` | The Services menu item and `talkinghead://` URLs |
-| `TalkingHead/WebPage.swift` | Downloads a page's text, or its highlighted passage |
-| `TalkingHead/TextFragment.swift` | Parses and finds `#:~:text=` text fragments |
-| `MCPTools/TalkingHeadTools.swift` | The MCP tools' definitions and handlers, shared by both transports |
-| `MCPTools/Speaking.swift` | `Speaker`, the interface the tools speak through, and `SpeechQueue`, which makes calls take turns |
-| `MCPTools/THProcessSpeaker.swift` | Speaks by running `th` (for `th-mcp` when the menu bar app isn't running) |
-| `MCPTools/Spooler.swift` | The spooler's socket protocol and client, and `th-mcp`'s `RoutingSpeaker` (spooler, else `th`) |
-| `CLI/th-mcp/main.swift` | `th-mcp`, the stdio MCP server |
+| `TalkingHead/TalkingHeadApp.swift`, `Entry.swift` | App entry, menu, windows; a `th` run handing its speech to the menu bar app |
+| `TalkingHead/SpeechEngine.swift`, `AudioPipeline.swift`, `Prosody.swift` | Speech state; synthesis, playback, loudness, pitch and word timing |
+| `TalkingHead/Viseme.swift`, `Expression.swift`, `Mood.swift` | Mouth shapes; eyebrow movement and presence poses; moods and `Script` |
+| `TalkingHead/FaceView.swift`, `FaceWindow.swift`, `SpeechBubble.swift`, `SpokenTextView.swift` | The portrait, its window and toolbar, and the speech bubble |
+| `TalkingHead/InputWindow.swift`, `TextFile.swift`, `WebPage.swift`, `TextFragment.swift` | Typing window, reading files and pages, text fragments |
+| `TalkingHead/ExternalRequests.swift` | The Services menu and `talkinghead://` links |
 | `TalkingHead/SpeechSpooler.swift` | The one speech queue, the face that speaks it, and its socket server |
-| `TalkingHead/Entry.swift` | The app's entry point: a `th` run hands its speech to a running menu bar app |
-| `TalkingHead/MCPHTTPServer.swift` | The Streamable HTTP MCP server, served by the menu bar app |
-| `TalkingHead/MCPServerController.swift` | Turns the HTTP server on and off (menu item, `TALKINGHEAD_MCP_HTTP_PORT`) |
-| `TalkingHead/MCPConfigWindow.swift` | The MCP Server Config… window: sample client configuration to copy or save |
-| `TalkingHead/Info.plist` | Service, URL scheme and network settings (generated from `project.yml`) |
+| `TalkingHead/MCPHTTPServer.swift`, `MCPServerController.swift`, `MCPConfigWindow.swift` | The HTTP MCP server, its menu item, and the config window |
+| `MCPTools/` | Shared by the app and `th-mcp`: tools, turn-taking, the spooler protocol (`Spooler.swift`) and presence rules (`Presence.swift`) |
+| `CLI/th`, `CLI/th-mcp/` | The `th` script and the stdio MCP server |
 | `TalkingHeadTests/` | Unit tests (Swift Testing) |
-| `TalkingHead/Assets.xcassets` | Portraits and their generated mouth and eyelid textures |
-| `CLI/th` | The `th` script, copied into the app bundle and signed at build time |
-| `MCPTools/` | Code compiled into both the app and `th-mcp` |
 | `project.yml` | XcodeGen project definition |
 
 ## Adding a portrait
 
-1. Add the image to `Assets.xcassets` as `<Name>`.
-2. Generate `<Name>MouthPatch` (skin with the lips painted out, feathered edges) and `<Name>Eyelids`
-   (skin across the eyes) from the image.
-3. Add a `Portrait` entry in `FaceView.swift`. It needs the voice name, the image size, the patch and
-   eyelid rectangles, the eye rectangles, a region for each eyebrow (its left and right edges, the
-   forehead above it, the middle of the brow, and the skin just above the eye) with how far it lifts,
-   the mouth centre and scale, and a lip colour, all in image pixels. Include it in `Portrait.all`.
+Add the image to `Assets.xcassets` as `<Name>`, generate `<Name>MouthPatch` (skin with the lips painted
+out) and `<Name>Eyelids` (skin across the eyes), and add a `Portrait` in `FaceView.swift` with, in image
+pixels, the patch and eyelid rectangles, the eyes, each eyebrow's region and lift, the mouth centre and
+scale, and a lip colour. Include it in `Portrait.all`.
 
 ## Notes
 
 - The app sandbox is off so `th` can read any file you pass.
 - The portraits are 360×360 pixels, so they look soft when enlarged on Retina displays.
-  Higher-resolution originals would look sharper.

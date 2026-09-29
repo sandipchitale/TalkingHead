@@ -86,7 +86,8 @@ struct MenuBarLabel: View {
             .onChange(of: speech.faceRequests, initial: true) {
                 guard speech.faceRequests > 0 else { return }
                 openWindow(id: FaceWindow.id)
-                NSApp.activate()
+                // Presence opens the face quietly, leaving the keyboard where it is.
+                if speech.faceRequestActivates { NSApp.activate() }
             }
     }
 }
