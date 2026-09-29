@@ -75,6 +75,9 @@ animated face which will sync with the speech. This should run on MacOS.
   Voice, Woman's Voice (the face's own, or installed voices of its gender, best quality first), Speed
   (Slower/Normal/Faster), Always on Top (same as the pin, remembered), Launch at Login, MCP Server
   (port N), MCP Server Config…, and Quit.
+- Quit in that menu is the only way to quit the applet. ⌘Q with one of its windows in front closes
+  that window instead, and the applet stays in the menu bar. (A `th` run still quits once its last
+  window is closed.)
 
 ### Command line: `th`
 - Packaged as `TalkingHead.app/Contents/MacOS/th`. Usage:

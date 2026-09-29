@@ -44,6 +44,9 @@ open /Applications/TalkingHead.app
 Turn on **Launch at Login** in its menu to keep it in the menu bar (on macOS Tahoe, also allow it in
 System Settings → Menu Bar). Requires macOS 26 (Tahoe) or later.
 
+**⌘Q closes the window, not the app.** With a Talking Head window in front, ⌘Q closes that window
+and the applet stays in the menu bar. Quit it from its menu (**Quit Talking Head**).
+
 **Better voices (recommended):** System Settings → Accessibility → **Read & Speak** → ⓘ next to Speak
 selection → **English** → **Voice**, and download Daniel and Samantha (Enhanced), or Premium voices such
 as Ava or Zoe. Talking Head uses the best installed quality on its own.

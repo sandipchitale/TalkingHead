@@ -61,6 +61,15 @@ struct TalkingHeadApp: App {
         .restorationBehavior(.disabled)
         .windowResizability(.contentMinSize)
         .windowBackgroundDragBehavior(.enabled)
+        .commands {
+            // ⌘Q with a window in front closes that window instead of quitting: the applet
+            // stays in the menu bar, and only its menu's Quit Talking Head ends it. (A `th` run
+            // still ends when its last window closes.)
+            CommandGroup(replacing: .appTermination) {
+                Button("Close Window") { NSApp.keyWindow?.performClose(nil) }
+                    .keyboardShortcut("q")
+            }
+        }
 
         Window("Type to Speak", id: InputWindow.id) {
             InputWindow()
