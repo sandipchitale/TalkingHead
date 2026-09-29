@@ -104,21 +104,28 @@ final class SpeechBubble {
 /// The content of the speech bubble: the spoken text, following the highlighted word.
 struct SpeechBubbleView: View {
     let bubble: SpeechBubble
+    /// The face window's own face, or nil for a window that follows whoever speaks.
+    var portraitID: Portrait.ID?
     @Environment(SpeechEngine.self) private var speech
 
     var body: some View {
         let shape = BubbleShape(tailEdge: bubble.tailEdge)
+        // A face's own bubble follows the words only while that face is the one speaking;
+        // otherwise it keeps what the face last said.
+        let face = portraitID ?? speech.portrait.id
+        let isLive = portraitID == nil || speech.livePortrait == portraitID
+        let text = isLive ? speech.spokenText : speech.lastSpokenText[face] ?? ""
         Group {
-            if speech.presence == .thinking, speech.state == .idle {
+            if speech.presence(for: face) == .thinking, !speech.isSpeaking(face) {
                 // Thinking, between speeches: a quietly animated ellipsis.
                 ThinkingDots()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if speech.spokenText.isEmpty {
+            } else if text.isEmpty {
                 Text("…")
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                SpokenTextView(text: speech.spokenText, highlight: speech.currentWordRange)
+                SpokenTextView(text: text, highlight: isLive ? speech.currentWordRange : nil)
             }
         }
         .font(.title3)

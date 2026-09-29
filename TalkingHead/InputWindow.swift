@@ -55,9 +55,8 @@ struct InputWindow: View {
     /// Speaks the text, opening the talking head if it isn't showing, and keeps the keyboard
     /// focus here so you can keep typing.
     private func speak() {
-        let face = NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(FaceWindow.id) == true }
-        if face?.isVisible != true {
-            openWindow(id: FaceWindow.id)
+        if FaceWindows.window(for: speech.portrait.id) == nil {
+            openWindow(id: FaceWindow.id, value: speech.portraitID)
             // The face window makes itself key when it appears; take the focus back.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [window] in
                 window?.makeKeyAndOrderFront(nil)

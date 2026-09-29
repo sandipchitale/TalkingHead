@@ -57,19 +57,36 @@ final class SpeechEngine {
     var replay: (text: String, mood: Mood?)? {
         lastRequest.text.isEmpty ? nil : lastRequest
     }
-    /// Incremented to ask for the face window to be shown (e.g. when another app sends text);
-    /// the menu bar item's view, which can open windows, reacts to it.
+    /// Incremented to ask for face windows to be shown (e.g. when another app sends text); the
+    /// menu bar item's view, which can open windows, reacts to it by opening `pendingFaces`.
     private(set) var faceRequests = 0
+    /// The faces asked for since the menu bar item last opened them (`takePendingFaces()`).
+    @ObservationIgnored private var pendingFaces: [Portrait.ID] = []
     /// Whether the last request should bring Talking Head forward. Presence opens the face
     /// quietly, so someone typing elsewhere keeps the keyboard.
     private(set) var faceRequestActivates = true
 
-    /// The presence shown between speeches (listening, thinking), or nil.
-    private(set) var presence: Presence.State?
-    /// The pose for `presence`, eased in and out; neutral while speaking.
-    private(set) var presencePose = PresencePose.neutral
-    /// When the last nod started, for the face to animate it.
-    private(set) var nodStarted: Date?
+    /// The face the live speech belongs to: the one that spoke last. Its window shows the moving
+    /// mouth, brows and mood; any other face window rests between its own speeches.
+    private(set) var livePortrait: Portrait.ID?
+    /// What each face last said, for its speech bubble while another face is speaking.
+    private(set) var lastSpokenText: [Portrait.ID: String] = [:]
+
+    /// The presence each face shows between its speeches (listening, thinking).
+    private(set) var presences: [Portrait.ID: Presence.State] = [:]
+    /// The pose for each face's presence, eased in and out; neutral while that face speaks.
+    private(set) var presencePoses: [Portrait.ID: PresencePose] = [:]
+    /// When each face's last nod started, for it to animate it.
+    private(set) var nodStarts: [Portrait.ID: Date] = [:]
+
+    func presence(for portrait: Portrait.ID) -> Presence.State? { presences[portrait] }
+    func presencePose(for portrait: Portrait.ID) -> PresencePose { presencePoses[portrait] ?? .neutral }
+    func nodStarted(for portrait: Portrait.ID) -> Date? { nodStarts[portrait] }
+
+    /// Whether `portrait`'s face is the one speaking (or paused mid-speech).
+    func isSpeaking(_ portrait: Portrait.ID) -> Bool {
+        state != .idle && livePortrait == portrait
+    }
 
     /// Speech rate, from `AVSpeechUtteranceMinimumSpeechRate` to `AVSpeechUtteranceMaximumSpeechRate`;
     /// the default is a little slower than the system's. Applies from the next utterance.
@@ -184,6 +201,8 @@ final class SpeechEngine {
         self.mood = script.mood(at: 0)
         spokenText = script.text
         currentWordRange = nil
+        livePortrait = portrait.id
+        lastSpokenText[portrait.id] = script.text
         generation = pipeline.speak(script.text, voice: self.voice(for: portrait), rate: rate)
         state = .speaking
         startTicking()
@@ -219,23 +238,32 @@ final class SpeechEngine {
         finish()
     }
 
-    func requestFace(activating: Bool = true) {
+    /// Asks for `portrait`'s face window (nil: the chosen face) to be shown.
+    func requestFace(_ portrait: Portrait.ID? = nil, activating: Bool = true) {
         faceRequestActivates = activating
+        pendingFaces.append(portrait ?? portraitID)
         faceRequests += 1
     }
 
-    /// Shows `presence` between speeches (nil for none), with `voice` picking the face (nil: the
-    /// menu's choice).
-    func show(presence: Presence.State?, voice: Portrait.ID?) {
-        self.presence = presence == Presence.State.none ? nil : presence
-        if state == .idle { voiceOverride = self.presence == nil ? voiceOverride : voice }
+    /// The faces asked for since the last call, each once, for the menu bar item to open.
+    func takePendingFaces() -> [Portrait.ID] {
+        var seen = Set<Portrait.ID>()
+        let faces = pendingFaces.filter { seen.insert($0).inserted }
+        pendingFaces = []
+        return faces
+    }
+
+    /// Shows each face's presence between its speeches; a face missing from `presences` shows
+    /// none.
+    func show(presences: [Portrait.ID: Presence.State]) {
+        self.presences = presences.filter { $0.value != .none }
         if ticker == nil { startTicking() }
     }
 
-    /// A one-shot nod, while showing presence.
-    func nod() {
-        guard presence != nil, state == .idle else { return }
-        nodStarted = Date()
+    /// A one-shot nod by `portrait`'s face, while it shows presence and isn't speaking.
+    func nod(_ portrait: Portrait.ID) {
+        guard presences[portrait] != nil, !isSpeaking(portrait) else { return }
+        nodStarts[portrait] = Date()
     }
 
     private func didFinish(_ finished: UInt64) {
@@ -307,11 +335,17 @@ final class SpeechEngine {
         // The mood holds through a pause and fades once the speech is over.
         let expressionTarget = state == .idle ? FaceExpression.neutral : mood.face
         expression = expression.approaching(expressionTarget, rate: 0.06)
-        // Presence only between speeches, easing in and out over about a quarter of a second.
-        let poseTarget = state == .idle ? PresencePose.target(for: presence) : .neutral
-        presencePose = presencePose.approaching(poseTarget, rate: 0.2)
+        // Each face shows its presence between its own speeches, easing in and out over about a
+        // quarter of a second: a debate's listening face keeps listening while the other speaks.
+        var posesSettled = true
+        for portrait in Portrait.all.map(\.id) {
+            let poseTarget = isSpeaking(portrait) ? PresencePose.neutral : PresencePose.target(for: presences[portrait])
+            let pose = presencePose(for: portrait).approaching(poseTarget, rate: 0.2)
+            if pose != presencePose(for: portrait) { presencePoses[portrait] = pose }
+            if pose != poseTarget { posesSettled = false }
+        }
 
-        if state != .speaking, !mouthMoving, brows == 0, expression == expressionTarget, presencePose == poseTarget {
+        if state != .speaking, !mouthMoving, brows == 0, expression == expressionTarget, posesSettled {
             ticker?.cancel()
             ticker = nil
         }

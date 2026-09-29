@@ -16,7 +16,9 @@ links, AI agents over MCP, and [VoiceChat](https://github.com/sandipchitale/Voic
 - **Listening and thinking:** between speeches, a client such as VoiceChat can have the face listen
   (brows up, a nod per phrase) or think (one brow up, eyes lowered, "···" in the bubble).
 - **Speech bubble:** click the head to show the text, with the spoken word highlighted.
-- **One queue:** everyone's speech is spoken in turn by one face.
+- **One queue, a window per face:** everyone's speech is spoken in turn. The man and the woman each
+  have their own window, so in a [VoiceChat](https://github.com/sandipchitale/VoiceChat) debate both
+  sides' faces are up side by side, one listening or thinking while the other speaks.
 
 ![Daniel](screenshots/Daniel.png) 
 
@@ -68,8 +70,9 @@ cp -R build/Build/Products/Release/TalkingHead.app /Applications/
 face speaks), **Man's Voice** and **Woman's Voice** (the voice each face uses), Speed, Always on Top,
 Launch at Login, **MCP Server (port 8766)**, **MCP Server Config…**, and Quit. Choices are remembered.
 
-**Face window.** Titled **Man** or **Woman**, with the voice as subtitle. Click the head for the speech
-bubble. Below the head: play/pause (Space; replays the last text when idle), type text, pick a file,
+**Face window.** One per face, titled **Man** or **Woman**, with the voice as subtitle. Usually one is
+showing; when two voices are in use (a debate's two sides), each face gets its own window, placed
+beside the other the first time. Click the head for the speech bubble. Below the head: play/pause (Space; replays the last text when idle), type text, pick a file,
 and pin (always on top).
 
 **Command line.**
@@ -145,9 +148,10 @@ concerned if it failed."*
   - `{"type":"stop"}` → `stopped`: silences everyone's speech.
   - `{"type":"presence","state":"listening"|"thinking"|"none","voice"?,"pulse":"nod"?}` →
     `{"type":"presence"}`: what the face shows between speeches. It's held per connection (the newest
-    message wins; `none` or closing drops it), the most recently updated holder is shown, speech
-    overrides it, and Stop doesn't clear it. The face opens without taking the keyboard and closes only
-    when nothing is queued and nobody holds presence. An older Talking Head answers `error`.
+    message wins; `none` or closing drops it). Each face shows its own voice's most recent holder, so two
+    holders with different voices get two faces. A face's own speech overrides its presence, and Stop
+    doesn't clear it. A face opens without taking the keyboard and closes only when it has nothing
+    queued and nobody holds presence for it. An older Talking Head answers `error`.
 - **`th`** is a script in the app bundle that runs the app with its arguments packed into one
   `-THArguments` value (AppKit would treat bare arguments as documents to open). It first offers its
   speech to the spooler.

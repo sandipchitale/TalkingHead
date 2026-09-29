@@ -110,11 +110,12 @@ final class ExternalRequests: NSObject {
     /// Queued behind any speech already going (see `SpeechSpooler`).
     private func speak(text: String, mood: Mood? = nil, voice: String? = nil) {
         spooler.submit(SpeechRequest(source: .text(text), voice: voice, mood: mood?.rawValue))
-        speech.requestFace()
+        // The face that will speak (the link's voice, else the menu's), not always the menu's.
+        speech.requestFace(voice.map(SpeechEngine.portraitID(forVoice:)))
     }
 
     private func speak(url: URL, mood: Mood? = nil, voice: String? = nil) {
-        speech.requestFace()
+        speech.requestFace(voice.map(SpeechEngine.portraitID(forVoice:)))
         spooler.submit(SpeechRequest(source: .url(url), voice: voice, mood: mood?.rawValue)) { [weak self] event in
             if event.type == .error { self?.showError(event.message ?? "Couldn't read \(url.absoluteString).") }
         }

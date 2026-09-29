@@ -35,8 +35,13 @@ private final class FakePerformer: SpoolPerformer {
 
     func stopCurrent() { stopped = true }
     func idle(closingFace: Bool) { faceLog.append(closingFace ? "close" : "idle") }
-    func show(presence: Presence) { faceLog.append("\(presence.state.rawValue) \(presence.voice ?? "-")") }
-    func nod() { faceLog.append("nod") }
+    /// Logs "listening female, thinking male" (one per face, most recent first), marked "during"
+    /// when speech is under way.
+    func show(presences: [Presence], queueEmpty: Bool) {
+        let shown = presences.map { "\($0.state.rawValue) \($0.voice ?? "-")" }.joined(separator: ", ")
+        faceLog.append(queueEmpty ? shown : "during \(shown)")
+    }
+    func nod(voice: String?) { faceLog.append(voice.map { "nod \($0)" } ?? "nod") }
 
     /// What the face was told, in order.
     private(set) var faceLog: [String] = []
@@ -408,6 +413,20 @@ struct PresenceRuleTests {
         #expect(board.current == thinking)
     }
 
+    @Test func eachVoiceHasItsOwnPresence() {
+        var board = PresenceBoard()
+        board.set(owner: 1, listening)                                   // female
+        board.set(owner: 2, thinking)                                    // male
+        board.set(owner: 3, Presence(state: .thinking, voice: "female")) // newer female holder
+        #expect(board.byVoice == [Presence(state: .thinking, voice: "female"), thinking])
+        board.drop(owner: 3)
+        #expect(board.byVoice == [thinking, listening])
+        board.drop(owner: 2)
+        #expect(board.byVoice == [listening])
+        board.drop(owner: 1)
+        #expect(board.byVoice.isEmpty)
+    }
+
     @Test func speechOverridesPresence() {
         #expect(FaceMode.resolve(speaking: true, presence: thinking) == .speaking)
         #expect(FaceMode.resolve(speaking: false, presence: thinking) == .thinking(voice: "male"))
@@ -433,7 +452,7 @@ struct PresenceSpoolerTests {
         spooler.setPresence(owner: 1, Presence(state: .listening, voice: "female"), nod: true)
         spooler.setPresence(owner: 1, Presence(state: .thinking, voice: "female"))
         spooler.dropPresence(owner: 1)
-        #expect(performer.faceLog == ["listening female", "listening female", "nod", "thinking female", "idle"])
+        #expect(performer.faceLog == ["listening female", "listening female", "nod female", "thinking female", "idle"])
     }
 
     @Test func speechOverridesPresenceAndTheFaceReturnsToIt() async {
@@ -441,12 +460,34 @@ struct PresenceSpoolerTests {
         let spooler = SpeechSpooler(performer: performer)
         spooler.setPresence(owner: 1, Presence(state: .thinking))
         spooler.submit(text("reply"), owner: 2)
-        // Changed mid-speech: recorded, applied once the speech ends. Nods are for idle faces only.
+        // Changed mid-speech: passed on at once (a face that isn't speaking shows it), and again
+        // once the speech ends. Nods are only while nothing speaks.
         spooler.setPresence(owner: 1, Presence(state: .listening), nod: true)
         await eventually { performer.log.count == 2 }
-        await eventually { performer.faceLog.count == 2 }
-        #expect(performer.faceLog == ["thinking -", "listening -"])
+        await eventually { performer.faceLog.count == 3 }
+        #expect(performer.faceLog == ["thinking -", "during listening -", "listening -"])
         #expect(spooler.currentPresence == Presence(state: .listening))
+    }
+
+    @Test func twoSeatsShowTwoFacesAndTakeTurns() async {
+        let performer = FakePerformer(duration: .milliseconds(80))
+        let spooler = SpeechSpooler(performer: performer)
+        spooler.setPresence(owner: 1, Presence(state: .listening, voice: "male"))
+        spooler.setPresence(owner: 2, Presence(state: .thinking, voice: "female"))
+        spooler.submit(text("for", voice: "male"), owner: 1)
+        spooler.submit(text("against", voice: "female"), owner: 2)
+        // While "for" speaks, the other seat's face changes: passed on straight away.
+        spooler.setPresence(owner: 2, Presence(state: .listening, voice: "female"))
+        await eventually { performer.log.count == 4 }
+        #expect(performer.log == ["start for", "end for", "start against", "end against"])
+        #expect(performer.voices == ["male", "female"])
+        await eventually { performer.faceLog.last == "listening female, listening male" }
+        #expect(performer.faceLog.first == "listening male")
+        #expect(performer.faceLog[1] == "thinking female, listening male")
+        #expect(performer.faceLog[2] == "during listening female, listening male")
+        spooler.dropPresence(owner: 1)
+        spooler.dropPresence(owner: 2)
+        #expect(performer.faceLog.suffix(2) == ["listening female", "idle"])
     }
 
     @Test func stopClearsSpeechButNotPresence() async {
@@ -503,7 +544,7 @@ struct PresenceServerTests {
         #expect(await send(connection, .presence(.listening, voice: "female"), .presence(.listening, voice: "female", nod: true))
                 == [.presence, .presence])
         #expect(spooler.currentPresence == Presence(state: .listening, voice: "female"))
-        #expect(performer.faceLog == ["listening female", "listening female", "nod"])
+        #expect(performer.faceLog == ["listening female", "listening female", "nod female"])
 
         connection.close()
         await eventually { spooler.currentPresence == nil }

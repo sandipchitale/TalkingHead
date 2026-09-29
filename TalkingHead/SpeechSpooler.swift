@@ -33,21 +33,24 @@ protocol SpoolPerformer: AnyObject {
     /// Stops the job being performed.
     func stopCurrent()
     /// The queue has emptied and nobody holds presence (after a stop, with `closingFace` if the
-    /// face should close now).
+    /// faces should close now).
     func idle(closingFace: Bool)
-    /// Nothing is speaking and someone holds `presence`: show it, opening the face if need be.
-    func show(presence: Presence)
-    /// A one-shot nod, while showing presence.
-    func nod()
+    /// Someone holds presence: `presences` has one per voice, most recent first. Each face shows
+    /// its own between its speeches, opening if need be. With `queueEmpty`, faces with nothing
+    /// left to say or show may close.
+    func show(presences: [Presence], queueEmpty: Bool)
+    /// A one-shot nod by `voice`'s face (nil: the menu's), while it shows presence.
+    func nod(voice: String?)
 }
 
 /// The one queue for everything the face says: `th` and `th-mcp` (through `SpoolerServer`), the
 /// HTTP MCP server, links, the Services menu, and the app's own typing window, file button and
 /// Play. Speech is spoken in the order it arrives, one at a time.
 ///
-/// It also keeps the face's presence (listening, thinking) between speeches, as clients on the
-/// socket ask for it. Presence is never queued: speech overrides it, and the face returns to it
-/// when the queue empties instead of closing.
+/// It also keeps the faces' presence (listening, thinking) between speeches, as clients on the
+/// socket ask for it. Presence is never queued: a face's speech overrides its presence, and the
+/// face returns to it when its speech ends instead of closing. Each voice has its own face, so in
+/// a debate one face listens or thinks while the other speaks; the one queue makes them take turns.
 final class SpeechSpooler {
     static var shared: SpeechSpooler!
 
@@ -76,7 +79,7 @@ final class SpeechSpooler {
     func setPresence(owner: Int, _ state: Presence, nod: Bool = false) {
         presence.set(owner: owner, state)
         settle()
-        if nod, current == nil, presence.current != nil { performer.nod() }
+        if nod, current == nil, presence.current != nil { performer.nod(voice: state.voice) }
     }
 
     /// Connection `owner` closed: its presence goes with it.
@@ -85,13 +88,15 @@ final class SpeechSpooler {
         settle()
     }
 
-    /// With nothing speaking, shows the presence being held, or lets the face go. While speech is
-    /// under way nothing changes: the face never switches in the middle of a speech.
+    /// Shows the presence being held, one per face, even while speech is under way (the speaking
+    /// face ignores its own until it finishes). With nothing held and nothing left to say, lets the
+    /// faces go.
     private func settle(closingFace: Bool = false) {
-        guard current == nil, queue.isEmpty else { return }
-        if let shown = presence.current {
-            performer.show(presence: shown)
-        } else {
+        let queueEmpty = current == nil && queue.isEmpty
+        let shown = presence.byVoice
+        if !shown.isEmpty {
+            performer.show(presences: shown, queueEmpty: queueEmpty)
+        } else if queueEmpty {
             performer.idle(closingFace: closingFace)
         }
     }
@@ -189,13 +194,18 @@ extension SpeechSpooler {
 
 // MARK: - The app's face
 
-/// Speaks spooled jobs with the app's face: fetches a page's text, uses the job's voice for that
-/// utterance (or the chosen one), floats the face if asked, and closes a face it opened once the
-/// queue has been empty for a moment.
+/// Speaks spooled jobs with the app's faces: fetches a page's text, uses the job's voice for that
+/// utterance (or the chosen one), floats the face if asked, and closes faces it opened once they
+/// have had nothing to say or show for a moment. Each voice has its own face window, so two
+/// clients with different voices (a debate's two seats) each get one.
 final class FacePerformer: SpoolPerformer {
     private let speech: SpeechEngine
     private let settings: FaceWindowSettings
-    private var openedFace = false
+    /// Faces whose windows this opened (for speech that closes its face, or for presence), to
+    /// close again when they have nothing left to say or show.
+    private var openedFaces: Set<Portrait.ID> = []
+    /// The faces holding presence, as last shown: they stay open.
+    private var heldFaces: Set<Portrait.ID> = []
     private var closing: Task<Void, Never>?
 
     init(speech: SpeechEngine, settings: FaceWindowSettings) {
@@ -218,15 +228,17 @@ final class FacePerformer: SpoolPerformer {
         if Task.isCancelled { return .stopped }
 
         closing?.cancel()
-        if job.closesFace, Self.faceWindow == nil { openedFace = true }
-        settings.keepsOnTopForSpeech = job.alwaysOnTop
         let voice = job.request.voice.map(SpeechEngine.portraitID(forVoice:))
+        let portrait = voice ?? speech.portraitID
+        let isShowing = FaceWindows.window(for: portrait) != nil
+        if job.closesFace, !isShowing { openedFaces.insert(portrait) }
+        settings.keepsOnTopForSpeech = job.alwaysOnTop
         guard let generation = speech.speak(text, mood: job.request.mood.flatMap(Mood.init(name:)), voice: voice) else {
             throw SpeechFailure("Nothing to speak: the text has no words to say.")
         }
-        // A face already showing (for presence, say) isn't brought forward: that would take the
-        // keyboard from whoever is typing.
-        speech.requestFace(activating: Self.faceWindow == nil)
+        // A face opens in front only when none is showing: bringing one forward while another is
+        // up (for presence, say) would take the keyboard from whoever is typing.
+        if !isShowing { speech.requestFace(portrait, activating: FaceWindows.visible.isEmpty) }
         started()
         return await speech.end(of: generation)
     }
@@ -235,48 +247,58 @@ final class FacePerformer: SpoolPerformer {
         speech.stop()
     }
 
-    func show(presence: Presence) {
+    func show(presences: [Presence], queueEmpty: Bool) {
         closing?.cancel()
-        if Self.faceWindow == nil {
-            openedFace = true
+        // Most recent first, so it wins a face that two holders share.
+        var shown: [Portrait.ID: Presence.State] = [:]
+        for presence in presences {
+            let portrait = presence.voice.map(SpeechEngine.portraitID(forVoice:)) ?? speech.portraitID
+            if shown[portrait] == nil { shown[portrait] = presence.state }
+        }
+        heldFaces = Set(shown.keys)
+        for portrait in Portrait.all.map(\.id) where shown[portrait] != nil && FaceWindows.window(for: portrait) == nil {
+            openedFaces.insert(portrait)
             // Opened quietly: presence follows someone composing elsewhere, so the face must not
             // take the keyboard.
-            speech.requestFace(activating: false)
+            speech.requestFace(portrait, activating: false)
         }
         settings.keepsOnTopForSpeech = true
-        speech.show(presence: presence.state, voice: presence.voice.map(SpeechEngine.portraitID(forVoice:)))
+        speech.show(presences: shown)
+        if queueEmpty { closeFacesSoon() }
     }
 
-    func nod() {
-        speech.nod()
+    func nod(voice: String?) {
+        speech.nod(voice.map(SpeechEngine.portraitID(forVoice:)) ?? speech.portraitID)
     }
 
     func idle(closingFace: Bool) {
         settings.keepsOnTopForSpeech = false
-        speech.show(presence: nil, voice: nil)
+        heldFaces = []
+        speech.show(presences: [:])
         closing?.cancel()
         if closingFace {
-            Self.faceWindow?.close()
-            openedFace = false
+            for window in FaceWindows.visible { window.close() }
+            openedFaces = []
             speech.releaseFace()
             return
         }
-        // A moment's grace, in case more speech follows. Then a face opened for the speech closes,
-        // still showing the face that spoke, and the menu's chosen face comes back.
+        closeFacesSoon()
+    }
+
+    /// After a moment's grace, in case more speech follows, closes the faces this opened that
+    /// have nothing to show (each still showing the face that spoke), and the menu's chosen face
+    /// comes back.
+    private func closeFacesSoon() {
+        closing?.cancel()
         closing = Task {
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled, speech.state == .idle, SpeechSpooler.shared.current == nil else { return }
-            if openedFace {
-                Self.faceWindow?.close()
-                openedFace = false
+            for portrait in openedFaces.subtracting(heldFaces) {
+                FaceWindows.window(for: portrait)?.close()
+                openedFaces.remove(portrait)
             }
-            speech.releaseFace()
+            if heldFaces.isEmpty { speech.releaseFace() }
         }
-    }
-
-    /// The face window, if it is showing.
-    private static var faceWindow: NSWindow? {
-        NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(FaceWindow.id) == true && $0.isVisible }
     }
 }
 
@@ -412,3 +434,4 @@ nonisolated final class SpoolerServer: @unchecked Sendable {
         }
     }
 }
+

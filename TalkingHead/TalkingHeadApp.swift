@@ -51,8 +51,10 @@ struct TalkingHeadApp: App {
                 .environment(speech)
         }
 
-        Window("Talking Head", id: FaceWindow.id) {
-            FaceWindow(options: options)
+        // One window per face (the value), so two voices each have theirs. A `th` run opens its
+        // window with no value, showing whichever face speaks.
+        WindowGroup("Talking Head", id: FaceWindow.id, for: Portrait.ID.self) { $portraitID in
+            FaceWindow(options: options, portraitID: portraitID)
                 .environment(speech)
                 .environment(faceSettings)
         }
@@ -94,9 +96,19 @@ struct MenuBarLabel: View {
             // before this view existed.
             .onChange(of: speech.faceRequests, initial: true) {
                 guard speech.faceRequests > 0 else { return }
-                openWindow(id: FaceWindow.id)
+                for portrait in speech.takePendingFaces() where FaceWindows.shouldOpen(portrait) {
+                    openWindow(id: FaceWindow.id, value: portrait)
+                }
                 // Presence opens the face quietly, leaving the keyboard where it is.
                 if speech.faceRequestActivates { NSApp.activate() }
+            }
+            // Choosing the other face in the menu swaps an idle face window for it. A face that is
+            // speaking or holding presence (a debate seat) keeps its window.
+            .onChange(of: speech.portraitID) { old, new in
+                guard let window = FaceWindows.window(for: old), speech.state == .idle,
+                      speech.presence(for: old) == nil, FaceWindows.window(for: new) == nil else { return }
+                window.close()
+                openWindow(id: FaceWindow.id, value: new)
             }
     }
 }
@@ -118,7 +130,7 @@ struct MenuBarMenu: View {
         Text("Talking Head \(Self.version)")
         Divider()
 
-        Button("Show Talking Head") { show(FaceWindow.id) }
+        Button("Show Talking Head") { showFace() }
         Button("Type Text to Speak…") { show(InputWindow.id) }
 
         Divider()
@@ -207,6 +219,16 @@ struct MenuBarMenu: View {
             SMAppService.openSystemSettingsLoginItems()
         }
         launchesAtLogin = Self.isLoginItem
+    }
+
+    /// Opens the chosen face's window and brings it to the front.
+    private func showFace() {
+        let portrait = speech.portraitID
+        openWindow(id: FaceWindow.id, value: portrait)
+        DispatchQueue.main.async {
+            NSApp.activate()
+            FaceWindows.window(for: portrait)?.makeKeyAndOrderFront(nil)
+        }
     }
 
     /// Opens a window and brings it to the front: an applet isn't active by default, and

@@ -46,8 +46,8 @@ animated face which will sync with the speech. This should run on MacOS.
   neutral when the speech ends.
 
 ### Presence: listening and thinking
-- Between speeches the face shows the presence a client holds on the spooler socket (see Speech
-  spooler):
+- Between its speeches each face shows the presence a client holds for it on the spooler socket (see
+  Speech spooler):
   - **Listening:** brows slightly up. A `nod` pulse dips the head 3–4 px and back over about 350 ms.
   - **Thinking:** one brow up, the other slightly down; the upper lids lowered (the portrait's own lids
     and lashes redrawn lower); the mouth closed; slower blinks (every 5–9 s). If the speech bubble is
@@ -58,7 +58,11 @@ animated face which will sync with the speech. This should run on MacOS.
   one core at most.
 
 ### Windows
-- **Face window:** resizable and draggable, showing only the head. Titled "Man" or "Woman", subtitled
+- **Face window:** one per face (man, woman), so two voices in use at once (a debate's two seats) each
+  have their own; usually one shows. Each is placed where that face was last left; the first time a
+  second face opens beside a showing one, it is placed level with it, a speech bubble's width to the
+  side. Only the face that is speaking moves its mouth, brows and mood; the other rests and keeps its
+  own presence. Resizable and draggable, showing only the head. Titled "Man" or "Woman", subtitled
   with the voice speaking (none when macOS's default voice speaks). Toolbar below the head:
   **Play/Pause** (Space; replays the last text when idle), **Type text to speak**, **Select a file to
   speak**, and **Pin/Unpin** (keeps the window and bubble above others).
@@ -156,12 +160,13 @@ animated face which will sync with the speech. This should run on MacOS.
 - Each job speaks with its own voice (else the menu's) and floats if asked; a face the spooler opened
   closes about a second after it has nothing to show. The menu's face is saved (`voice`) for `th-mcp`.
 - **Presence rules:**
-  - Held per connection; the newest message wins, and `none` drops it. With several holders, the most
-    recently updated one is shown, with its voice.
-  - Never queued. Speech overrides it; a change during speech is shown when the speech ends, and the
-    face returns to the presence instead of closing.
-  - Presence opens the face, floating, without activating Talking Head. The face closes only when the
-    queue is empty and nobody holds presence.
+  - Held per connection; the newest message wins, and `none` drops it. Each face shows the most
+    recently updated holder with its voice (no voice: the menu's face), so two holders with different
+    voices are shown at once, one per face.
+  - Never queued. A face's own speech overrides its presence, and it returns to it instead of closing.
+    While one face speaks, the other shows changes to its presence straight away.
+  - Presence opens its face, floating, without activating Talking Head. A face the spooler opened
+    closes only when nothing is queued or speaking and nobody holds presence for it.
   - Stop clears speech, not presence. A nod happens only while nothing is speaking.
   - `speak` and `stop` are unchanged for older clients; an older Talking Head answers `presence` with
     `error`, which clients take as "not supported".

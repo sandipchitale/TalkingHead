@@ -14,8 +14,8 @@ nonisolated struct Presence: Sendable, Equatable {
 }
 
 /// Who holds presence, by spooler connection. The newest message on a connection replaces its
-/// last one; `none`, or the connection closing, drops it. When several connections hold presence
-/// (two debate seats, say), the most recently updated one is shown.
+/// last one; `none`, or the connection closing, drops it. Each face shows its own voice's most
+/// recently updated holder (`byVoice`), so two debate seats each get a face.
 nonisolated struct PresenceBoard: Sendable, Equatable {
     private struct Holder: Sendable, Equatable {
         var presence: Presence
@@ -43,6 +43,16 @@ nonisolated struct PresenceBoard: Sendable, Equatable {
     /// The presence to show: the most recently updated holder's, or nil when nobody holds any.
     var current: Presence? {
         holders.values.max { $0.updated < $1.updated }?.presence
+    }
+
+    /// The presence for each face, most recently updated first: per voice (no voice meaning the
+    /// menu's face), the newest holder's. Each face window shows its own, so two debate seats with
+    /// different voices are both shown at once.
+    var byVoice: [Presence] {
+        var seen = Set<String>()
+        return holders.values.sorted { $0.updated > $1.updated }.compactMap { holder in
+            seen.insert(holder.presence.voice ?? "").inserted ? holder.presence : nil
+        }
     }
 
     var isEmpty: Bool { holders.isEmpty }
