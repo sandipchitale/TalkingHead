@@ -68,7 +68,8 @@ cp -R build/Build/Products/Release/TalkingHead.app /Applications/
 
 **Menu bar.** Show Talking Head, Type Text to Speak… (⌘⏎ speaks), Play/Pause, Stop, **Voice** (which
 face speaks), **Man's Voice** and **Woman's Voice** (the voice each face uses), Speed, Always on Top,
-Launch at Login, **MCP Server (port 8766)**, **MCP Server Config…**, and Quit. Choices are remembered.
+**MCP Server (port 8766)**, **MCP Server Config…**, then Launch at Login and Quit, ending the same way
+as [VoiceChat](https://github.com/sandipchitale/VoiceChat)'s menu. Choices are remembered.
 
 **Face window.** One per face, titled **Man** or **Woman**, with the voice as subtitle. Usually one is
 showing; when two voices are in use (a debate's two sides), each face gets its own window, placed

@@ -77,8 +77,8 @@ animated face which will sync with the speech. This should run on MacOS.
 - The menu starts with a heading, "Talking Head <version>", then: Show Talking Head, Type Text to
   Speak…, Play/Pause, Stop, Voice (Man/Woman, each shown with its voice, e.g. "Woman (Ava)"), Man's
   Voice, Woman's Voice (the face's own, or installed voices of its gender, best quality first), Speed
-  (Slower/Normal/Faster), Always on Top (same as the pin, remembered), Launch at Login, MCP Server
-  (port N), MCP Server Config…, and Quit.
+  (Slower/Normal/Faster), Always on Top (same as the pin, remembered); then MCP Server (port N) and
+  MCP Server Config…; then Launch at Login and Quit. The last two groups match VoiceChat's menu.
 - Quit in that menu is the only way to quit the applet. ⌘Q with one of its windows in front closes
   that window instead, and the applet stays in the menu bar. (A `th` run still quits once its last
   window is closed.)

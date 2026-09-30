@@ -162,12 +162,16 @@ struct MenuBarMenu: View {
         Divider()
 
         Toggle("Always on Top", isOn: $faceSettings.isAlwaysOnTop)
-        Toggle("Launch at Login", isOn: Binding(get: { launchesAtLogin }, set: setLaunchAtLogin))
+
+        // The same ending as VoiceChat's menu: the MCP server, then Launch at Login and Quit.
         if let mcp = MCPServerController.shared {
+            Divider()
             Toggle("MCP Server (port \(String(mcp.port)))", isOn: Binding(get: { mcp.isRunning }, set: mcp.setEnabled))
             Button("MCP Server Config…") { MCPConfigWindowController.show() }
         }
 
+        Divider()
+        Toggle("Launch at Login", isOn: Binding(get: { launchesAtLogin }, set: setLaunchAtLogin))
         Button("Quit Talking Head") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
     }
